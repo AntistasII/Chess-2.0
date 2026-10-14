@@ -1,0 +1,189 @@
+@media(min-width:951px) {
+  .app {
+    max-width: min(1280px,calc(100dvh + 190px));
+  }
+}
+
+@media(max-width:950px) {
+  .app {
+    padding: 0 20px 24px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0,1fr) 300px;
+    gap: 20px;
+  }
+
+  .deck-section {
+    padding: 20px 16px;
+  }
+
+  .deck-row {
+    gap: 14px;
+  }
+
+  .deck-art {
+    width: 62px;
+    height: 84px;
+  }
+
+  .brand {
+    font-size: 20px;
+  }
+
+  .player-info strong {
+    font-size: 12px;
+  }
+
+  .badges {
+    flex-wrap: wrap;
+    max-width: 40px;
+  }
+
+  .badge {
+    width: 16px;
+    height: 16px;
+    font-size: 11px;
+  }
+
+  .badge.shield svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .hint {
+    display: block;
+    padding: 10px 0;
+  }
+
+  .hint button {
+    margin-left: 10px;
+  }
+}
+
+@media(max-width:730px) {
+  .app {
+    padding: 0 14px 24px;
+  }
+
+  .topbar {
+    min-height: 75px;
+    height: auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .topbar nav {
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    font-size: 17px;
+    gap: 6px;
+  }
+
+  .brand-mark {
+    font-size: 29px;
+  }
+
+  .brand-light {
+    display: none;
+  }
+
+  .quiet {
+    padding: 8px;
+  }
+
+  .quiet span {
+    display: none;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .player-row {
+    height: 55px;
+  }
+
+  .sidebar {
+    padding-top: 0;
+  }
+
+  .deck-section {
+    padding: 16px;
+  }
+
+  .deck-row {
+    margin-top: 12px;
+    gap: 22px;
+  }
+
+  .deck-art {
+    height: 65px;
+    width: 49px;
+  }
+
+  .deck-detail {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 0 12px;
+  }
+
+  .deck-detail>strong {
+    font-size: 23px;
+  }
+
+  .deck-detail>small {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 3px 0;
+  }
+
+  .deck-detail .primary {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .under-button {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .hand-section {
+    margin-top: 22px;
+  }
+
+  .card {
+    flex-basis: 165px;
+    min-height: 220px;
+  }
+
+  .empty-hand {
+    height: 120px;
+  }
+
+  .history-section {
+    margin-top: 18px;
+  }
+
+  .dialog {
+    padding: 27px 22px;
+  }
+
+  .dialog-actions {
+    flex-direction: column;
+  }
+
+  .rank-label,.file-label {
+    font-size: 9px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  * {
+    transition: none!important;
+  }
+}

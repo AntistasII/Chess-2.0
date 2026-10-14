@@ -1,0 +1,189 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #1f302752;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dialog {
+  position: relative;
+  background: #fffefb;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 15px 60px #1734271a;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.dialog h2 {
+  font-size: 25px;
+  margin: 8px 0 20px;
+}
+
+.dialog>p {
+  font-size: 13px;
+  color: #7a8575;
+  line-height: 1.8;
+}
+
+.dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  margin: 20px 0;
+  color: #66745f;
+}
+
+.dialog input,.dialog select {
+  border: 1px solid #dce3d5;
+  border-radius: 7px;
+  background: #fafcf6;
+  color: #344330;
+  padding: 10px;
+}
+
+.segmented {
+  display: flex;
+  background: #eef2e8;
+  padding: 4px;
+  border-radius: 9px;
+}
+
+.segmented button {
+  flex: 1;
+  font-size: 12px;
+  border: 0;
+  background: transparent;
+}
+
+.segmented button.active {
+  background: #fffefb;
+  box-shadow: 0 1px 4px #20331912;
+  color: #397558;
+}
+
+.wide {
+  width: 100%;
+  padding: 13px;
+}
+
+.close {
+  position: absolute;
+  right: 13px;
+  top: 11px;
+  border: 0;
+  background: transparent;
+  color: #a0a895;
+  font-size: 25px;
+  padding: 3px 9px;
+}
+
+.rules-dialog {
+  max-width: 620px;
+}
+
+.rules-dialog p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.rules-dialog summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #397558;
+  padding: 12px 0;
+}
+
+.catalog>div {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.catalog svg {
+  width: 30px;
+  height: 30px;
+  color: #709069;
+}
+
+.catalog p {
+  font-size: 11px;
+  margin: 5px 0 0;
+}
+
+.pass-dialog {
+  text-align: center;
+}
+
+.dialog-symbol {
+  font-size: 60px;
+  font-family: Georgia,serif;
+}
+
+.promotion-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.promotion-options button {
+  flex: 1;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  padding: 8px;
+}
+
+.promotion-options svg {
+  width: 55px;
+  height: 55px;
+}
+
+.scout-cards {
+  display: flex;
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.mini-card {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: #f6f8ef;
+  padding: 18px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.mini-card svg {
+  width: 40px;
+  height: 40px;
+  color: #6b8964;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.dialog-actions button {
+  flex: 1;
+  font-size: 11px;
+}

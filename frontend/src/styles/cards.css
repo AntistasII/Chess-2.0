@@ -1,0 +1,277 @@
+.sidebar {
+  padding-top: 12px;
+  min-width: 0;
+}
+
+.section-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: #879081;
+  font-weight: 650;
+}
+
+.deck-section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 23px 22px;
+  background: #fffefa;
+}
+
+.deck-row {
+  display: flex;
+  gap: 19px;
+  margin-top: 20px;
+  align-items: center;
+}
+
+.deck-art {
+  width: 75px;
+  height: 98px;
+  position: relative;
+  flex-shrink: 0;
+  border: 1px solid #b8c4b1;
+  border-radius: 6px;
+  background: #edf1e7;
+  display: grid;
+  place-items: center;
+  box-shadow: -4px -4px 0 -1px #fafaf7,-4px -4px 0 0 #c8d1c1,-8px -8px 0 -1px #fafaf7,-8px -8px 0 0 #d3dacd;
+}
+
+.deck-art svg {
+  width: 37px;
+  height: 37px;
+  color: #71906c;
+}
+
+.deck-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.deck-detail>strong {
+  font-size: 27px;
+  font-weight: 500;
+}
+
+.deck-detail>strong span {
+  font-size: 13px;
+  color: #7f887a;
+}
+
+.deck-detail>small {
+  font-size: 10px;
+  margin: 5px 0 13px;
+}
+
+.deck-detail .primary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+}
+
+.under-button {
+  text-align: center;
+  margin: 7px 0 0!important;
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 17px;
+}
+
+.section-title>span {
+  color: #85907e;
+  font-size: 12px;
+  background: #eff2e9;
+  padding: 4px 8px;
+  border-radius: 5px;
+}
+
+.hand-section {
+  margin-top: 28px;
+  padding-bottom: 23px;
+  border-bottom: 1px solid var(--line);
+}
+
+.card-list {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 3px 2px 13px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: #bfcbbb transparent;
+}
+
+.card {
+  flex: 0 0 156px;
+  min-height: 224px;
+  text-align: left;
+  border-color: #dce2d4;
+  background: #fffef8;
+  padding: 17px 13px 11px;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  position: relative;
+}
+
+.card.selected {
+  border-color: #397558;
+  box-shadow: 0 0 0 1px #397558;
+  background: #f1f6ec;
+}
+
+.card.exchange-target {
+  border-color: #4d8baf;
+}
+
+.card.unavailable:not(.selected):not(.exchange-target) {
+  color: #899285;
+}
+
+.card-icon {
+  color: #64866b;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.card-icon svg {
+  width: 37px;
+  height: 37px;
+}
+
+.card-icon.astral {
+  color: #9276a9;
+}
+
+.card-icon.freeze {
+  color: #6f9faf;
+}
+
+.card-icon.shield {
+  color: #5a80a0;
+}
+
+.card strong {
+  font-size: 13px;
+  line-height: 1.35;
+  min-height: 34px;
+}
+
+.card p {
+  font-size: 10px;
+  color: #7a8574;
+  line-height: 1.6;
+  margin: 9px 0 14px;
+}
+
+.card-footer {
+  margin-top: auto;
+  border-top: 1px solid #e4e8df;
+  padding-top: 9px;
+  font-size: 9px;
+  color: #85917b;
+}
+
+.empty-hand {
+  height: 174px;
+  border: 1px dashed #dce2d6;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #9aa592;
+  font-size: 12px;
+}
+
+.empty-hand svg {
+  width: 31px;
+  height: 31px;
+  margin-bottom: 12px;
+}
+
+.empty-hand strong {
+  font-size: 12px;
+  color: #7e8b77;
+}
+
+.empty-hand p {
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 6px 0 0;
+}
+
+.card-help {
+  margin-top: 8px;
+  background: #eff4e9;
+  border-radius: 7px;
+  padding: 13px;
+  font-size: 12px;
+}
+
+.card-help p {
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 6px 0;
+}
+
+.card-help small {
+  color: #4f7354;
+}
+
+.card-help button {
+  margin-top: 8px;
+}
+
+.history-section {
+  margin-top: 24px;
+}
+
+.history-section h2 {
+  font-size: 14px;
+}
+
+.history-section ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-section li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 0;
+  font-size: 11px;
+  border-bottom: 1px solid #ecefe7;
+  line-height: 1.5;
+}
+
+.history-number {
+  color: #a0a99a;
+  min-width: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-footer {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #9aa390;
+}
+
+.local-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #8aa784;
+}
