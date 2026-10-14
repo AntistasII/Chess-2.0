@@ -17,7 +17,7 @@ public final class ApiHandler implements HttpHandler {
     private String guestToken;
     private final String hostKey;
     private final String guestKey;
-    private final String hostToken = java.util.UUID.randomUUID().toString();
+    private volatile String hostToken = java.util.UUID.randomUUID().toString();
 
     public ApiHandler(GameSession session) {
         this(session, "", "");
@@ -121,6 +121,17 @@ public final class ApiHandler implements HttpHandler {
                     ((Number) input.getOrDefault("handLimit", 3)).intValue(),
                     (String) input.getOrDefault("difficulty", "normal"));
             HttpJson.send(exchange, 200, session.isNetwork() ? session.playerState(true) : session.state());
+            return;
+        }
+        if (path.equals("/api/reset")) {
+            long version = input.get("version") instanceof Number number ? number.longValue() : -1;
+            session.requireVersion(version);
+            session.newGame(session.isNetwork() ? "network" : "ai", 3, "normal");
+            hostToken = java.util.UUID.randomUUID().toString();
+            guestToken = null;
+            exchange.getResponseHeaders().add("Set-Cookie", "chess_host=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
+            exchange.getResponseHeaders().add("Set-Cookie", "chess_guest=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
+            HttpJson.send(exchange, 200, Map.of("ok", true));
             return;
         }
         if (!COMMAND_PATHS.contains(path)) {

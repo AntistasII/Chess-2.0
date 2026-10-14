@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { request, requestOpponent, type CommandPath } from '../game/api';
+import { ApiError, request, requestOpponent, type CommandPath } from '../game/api';
 import { gameStatus, selectionHint } from '../game/catalog';
 import type { Action, Card, State } from '../game/types';
 export function useGame() {
@@ -54,7 +54,10 @@ export function useGame() {
                         && previous.playerWhite === next.playerWhite ? previous : next);
                     setError('');
                 }
-            } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : 'Нет связи с сервером'); }
+            } catch (e) { if (!cancelled) {
+                if (e instanceof ApiError && e.status === 401) { setGame(null); resetSelection(); setCovered(false); }
+                setError(e instanceof Error ? e.message : 'Нет связи с сервером');
+            } }
             if (!cancelled) timer = setTimeout(poll, 1000);
         }
         timer = setTimeout(poll, 1000);
@@ -117,6 +120,18 @@ export function useGame() {
         } catch (e) { setError(e instanceof Error ? e.message : 'Ошибка сохранения'); }
         finally { setBusy(false); }
     }
+    async function restartGame() {
+        if (!game || busy) return;
+        setBusy(true); setError('');
+        try {
+            const response = await fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version: game.version }) });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Не удалось перезапустить игру');
+            location.reload();
+        } catch (e) { setError(e instanceof Error ? e.message : 'Ошибка перезапуска'); }
+        finally { setBusy(false); }
+    }
     async function uploadGame(file: File) {
         if (!game || busy) return;
         try {
@@ -174,6 +189,6 @@ export function useGame() {
         game, error, notice, busy, covered, setCovered, flipped, setFlipped,
         selected, cardId, firstTarget, choices, setChoices, activeCard,
         cardActions, canAct, targets, visibleWhite, status, hint,
-        resetSelection, act, execute, clickSquare, selectCard, downloadGame, uploadGame,
+        resetSelection, act, execute, clickSquare, selectCard, downloadGame, uploadGame, restartGame,
     };
 }

@@ -75,7 +75,7 @@ public final class NetworkApiTest {
         check(call(api, "/api/state", false, null, cookie).status == 200, "Guest reconnects using cookie");
         check(call(api, "/api/state", false, null, null).status == 403, "Third browser cannot claim black");
         version = ((Number)hostView.get("version")).longValue();
-        for (String path : List.of("new", "save", "load", "export", "import", "ai"))
+        for (String path : List.of("new", "save", "load", "export", "import", "ai", "reset"))
             check(call(api, "/api/" + path, false, Map.of("version", version), cookie).status == 403, "Guest admin denied: " + path);
         check(call(api, "/api/ai", true, Map.of("version", version), null).status == 400, "Network rejects AI commands");
         var foreign = new Exchange("/api/action", false, Map.of("version", version, "actionId", "draw"), cookie);
@@ -99,6 +99,18 @@ public final class NetworkApiTest {
         var secureRequest = new Exchange("/api/new", false, Map.of("mode", "network"), ownerCookie);
         secureRequest.request.set("Origin", "https://192.168.1.2:8080"); cloud.handle(secureRequest);
         check(secureRequest.status == 200, "HTTPS origin accepted behind proxy");
+        long cloudVersion = ((Number)cloudSession.state().get("version")).longValue();
+        call(cloud, "/api/action", false, Map.of("version", cloudVersion, "actionId", "draw"), ownerCookie);
+        cloudVersion++;
+        check(call(cloud, "/api/reset", false, Map.of("version", cloudVersion), friendCookie).status == 403, "Friend cannot reset sessions");
+        check(call(cloud, "/api/reset", false, Map.of("version", cloudVersion - 1), ownerCookie).status == 409, "Stale reset rejected");
+        check(call(cloud, "/api/reset", false, Map.of("version", cloudVersion), ownerCookie).status == 200, "Owner can reset completely");
+        check(call(cloud, "/api/state", false, null, ownerCookie).status == 401, "Old owner cookie invalidated");
+        check(call(cloud, "/api/state", false, null, friendCookie).status == 401, "Old friend cookie invalidated");
+        check(((Number)cloudSession.state().get("ply")).intValue() == 0
+                && ((List<?>)cloudSession.state().get("hand")).isEmpty(), "Reset clears moves and cards");
+        check(call(cloud, "/api/login", false, Map.of("code", "test-owner-code-123456"), null).status == 200, "Same owner code works after reset");
+        check(call(cloud, "/api/login", false, Map.of("code", "test-friend-code-654321"), null).status == 200, "Same invitation works after reset");
         System.out.println("Passed " + checks + " network HTTP checks: seats, turns, hands, cookies and permissions.");
     }
 }

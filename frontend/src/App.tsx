@@ -8,7 +8,7 @@ import { TurnDialogs } from './components/TurnDialogs';
 import { GameRules } from './components/GameRules';
 import { NewGameForm } from './components/NewGameForm';
 export function App() {
-    const { game, error, notice, busy, covered, setCovered, flipped, setFlipped, selected, cardId, firstTarget, choices, setChoices, activeCard, cardActions, canAct, targets, visibleWhite, status, hint, resetSelection, act, execute, clickSquare, selectCard, downloadGame, uploadGame, } = useGame();
+    const { game, error, notice, busy, covered, setCovered, flipped, setFlipped, selected, cardId, firstTarget, choices, setChoices, activeCard, cardActions, canAct, targets, visibleWhite, status, hint, resetSelection, act, execute, clickSquare, selectCard, downloadGame, uploadGame, restartGame, } = useGame();
     const [modal, setModal] = useState<'new' | 'rules' | null>(null);
     const [mode, setMode] = useState('ai');
     const [limit, setLimit] = useState(3);
@@ -58,6 +58,9 @@ export function App() {
                 </button>
                 <button className="quiet" onClick={() => setModal('new')}><Icon type="settings"/><span>Новая игра</span>
                 </button>
+                {game.mode === 'network' && <button className="quiet" disabled={busy} onClick={() => {
+                    if (window.confirm('Полностью перезапустить игру? Партия сбросится, оба игрока выйдут и снова введут свои коды.')) void restartGame();
+                }}>Перезапустить полностью</button>}
                 </>}
                 {game.mode === 'network' && game.playerWhite === false && <span>Сетевая игра · вы чёрные</span>}
             </nav>
