@@ -81,6 +81,24 @@ public final class NetworkApiTest {
         var foreign = new Exchange("/api/action", false, Map.of("version", version, "actionId", "draw"), cookie);
         foreign.request.set("Origin", "http://unrelated.example"); api.handle(foreign);
         check(foreign.status == 403, "Foreign-origin commands rejected");
+        var cloudSession = new GameSession(g -> "draw");
+        cloudSession.newGame("network", 3, "normal");
+        var cloud = new ApiHandler(cloudSession, "test-owner-code-123456", "test-friend-code-654321");
+        check(call(cloud, "/api/state", true, null, null).status == 401, "Proxy loopback cannot bypass cloud login");
+        check(call(cloud, "/api/login", false, Map.of("code", "wrong"), null).status == 401, "Wrong code rejected");
+        var login = call(cloud, "/api/login", false, Map.of("code", "test-owner-code-123456"), null);
+        String ownerCookie = login.response.get("Set-Cookie").stream().filter(c -> c.startsWith("chess_host="))
+                .findFirst().orElseThrow().split(";")[0];
+        check(login.status == 200 && login.response.getFirst("Set-Cookie").contains("Secure"), "Owner receives secure cookie");
+        check(call(cloud, "/api/state", false, null, ownerCookie).json().get("playerWhite").equals(true), "Remote owner gets white");
+        login = call(cloud, "/api/login", false, Map.of("code", "test-friend-code-654321"), null);
+        String friendCookie = login.response.get("Set-Cookie").stream().filter(c -> c.startsWith("chess_guest="))
+                .findFirst().orElseThrow().split(";")[0];
+        check(call(cloud, "/api/state", false, null, friendCookie).json().get("playerWhite").equals(false), "Invitation gets black");
+        check(call(cloud, "/api/new", false, Map.of("mode", "network"), friendCookie).status == 403, "Friend cannot reset cloud game");
+        var secureRequest = new Exchange("/api/new", false, Map.of("mode", "network"), ownerCookie);
+        secureRequest.request.set("Origin", "https://192.168.1.2:8080"); cloud.handle(secureRequest);
+        check(secureRequest.status == 200, "HTTPS origin accepted behind proxy");
         System.out.println("Passed " + checks + " network HTTP checks: seats, turns, hands, cookies and permissions.");
     }
 }
