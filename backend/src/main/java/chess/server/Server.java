@@ -17,15 +17,33 @@ import java.util.concurrent.*;
 public final class Server {
     /** Запускает сервер на локальном адресе; отдельные запросы обслуживаются виртуальными потоками. */
     public static void main(String[] args) throws IOException {
-        int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
+        String cloudPort = System.getenv("PORT");
+        int port = args.length > 0 ? Integer.parseInt(args[0]) : Integer.parseInt(cloudPort == null ? "8080" : cloudPort);
+        String hostKey = System.getenv().getOrDefault("CHESS_HOST_KEY", "");
+        String guestKey = System.getenv().getOrDefault("CHESS_GUEST_KEY", "");
+        if (cloudPort != null || !hostKey.isBlank()) {
+            if (hostKey.length() < 16 || guestKey.length() < 16 || hostKey.equals(guestKey))
+                throw new IOException("Задайте разные CHESS_HOST_KEY и CHESS_GUEST_KEY длиной от 16 символов.");
+        }
         var config = chess.config.ApplicationConfig.load(Path.of("application.yml"));
         var chatGpt = ChatGptOpponent.fromConfig(config);
-        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
-        server.createContext("/api/", new ApiHandler(new GameSession(Ai::choose, chatGpt)));
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
+        var session = new GameSession(Ai::choose, chatGpt);
+        if (!hostKey.isBlank()) session.newGame("network", 3, "normal");
+        server.createContext("/api/", new ApiHandler(session, hostKey, guestKey));
+        server.createContext("/health", exchange -> HttpJson.send(exchange, 200, Map.of("status", "ok")));
         server.createContext("/", Server::staticFile);
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server.start();
         System.out.println("Шахматы с картами: http://127.0.0.1:" + port);
+        for (var interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements();) {
+            var net = interfaces.nextElement();
+            if (!net.isUp() || net.isLoopback()) continue;
+            for (var addresses = net.getInetAddresses(); addresses.hasMoreElements();) {
+                var address = addresses.nextElement();
+                if (address instanceof Inet4Address) System.out.println("Для второго игрока: http://" + address.getHostAddress() + ":" + port);
+            }
+        }
     }
 
     /** Раздаёт собранный интерфейс, проверяя, что путь остаётся внутри frontend/dist. */

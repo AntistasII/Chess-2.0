@@ -24,6 +24,19 @@ public final class GameSessionTest {
     }
 
     public static void main(String[] args) throws Exception {
+        Game network = new Game("network", 3, "normal");
+        network.whiteHand.add(new Card(1000, CardType.SCOUT));
+        network.blackHand.add(new Card(1001, CardType.SHIELD));
+        GameSession networkSession = new GameSession(network, g -> { throw new AssertionError("No network AI"); });
+        networkSession.scout(0, 1000);
+        check(((List<?>)networkSession.playerState(true).get("scouting")).size() == 2, "Owner sees scout cards");
+        check(((List<?>)networkSession.playerState(false).get("scouting")).isEmpty(), "Remote player cannot see opponent scouting");
+        check(((List<?>)networkSession.playerState(false).get("actions")).isEmpty(), "Remote player cannot see scout action IDs");
+        String scoutChoice = network.legalActions().get(0).id();
+        networkSession.play(network.version, scoutChoice);
+        check(((List<?>)networkSession.playerState(false).get("hand")).size() == 1, "Black hand remains visible on black turn");
+        check(((List<?>)networkSession.playerState(true).get("hand")).isEmpty(), "Host view does not switch to black hand");
+        check(GameSave.decode(GameSave.encode(network)).mode.equals("network"), "Save preserves network mode");
         GameSession session = new GameSession(Ai::choose);
         Map<String, Object> initial = session.state();
         check(initial.keySet().equals(Set.of("board", "boardSize", "whiteTurn", "mode", "difficulty", "handLimit",

@@ -13,14 +13,34 @@ export function App() {
     const [mode, setMode] = useState('ai');
     const [limit, setLimit] = useState(3);
     const [difficulty, setDifficulty] = useState('normal');
+    const [loginCode, setLoginCode] = useState('');
+    const [loginError, setLoginError] = useState('');
+    const [loggingIn, setLoggingIn] = useState(false);
     if (!game)
         return <main className="loading"><h1>Шахматы с картами</h1>
         <p>{error || 'Подключаемся к игре…'}</p>
+        {error && <form onSubmit={async event => {
+            event.preventDefault(); setLoggingIn(true); setLoginError('');
+            try {
+                const response = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: loginCode }) });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Не удалось войти');
+                location.reload();
+            } catch (e) { setLoginError(e instanceof Error ? e.message : 'Ошибка входа'); }
+            finally { setLoggingIn(false); }
+        }}>
+            <label>Код владельца или приглашения
+                <input type="password" autoComplete="off" value={loginCode} onChange={event => setLoginCode(event.target.value)} required />
+            </label>
+            <button className="primary" disabled={loggingIn}>Войти</button>
+            {loginError && <p role="alert">{loginError}</p>}
+        </form>}
         <button onClick={() => location.reload()}>Повторить</button>
     </main>;
     return <div className="app">
         <header className="topbar"><a className="brand" href="/" aria-label="Шахматы с картами"><span className="brand-mark">♞</span><span>Шахматы <span className="brand-light">с картами</span></span></a>
             <nav>
+                {!(game.mode === 'network' && game.playerWhite === false) && <>
                 <button className="quiet" disabled={busy} onClick={() => void downloadGame()}>Сохранить в файл</button>
                 <label className="quiet" style={{ cursor: busy ? 'default' : 'pointer' }}>
                     Загрузить из файла
@@ -38,6 +58,8 @@ export function App() {
                 </button>
                 <button className="quiet" onClick={() => setModal('new')}><Icon type="settings"/><span>Новая игра</span>
                 </button>
+                </>}
+                {game.mode === 'network' && game.playerWhite === false && <span>Сетевая игра · вы чёрные</span>}
             </nav>
         </header>
         <main className="layout">
@@ -63,9 +85,9 @@ export function App() {
                 <div className="hint" aria-live="polite">{hint}{(selected !== null || cardId !== null) &&
             <button onClick={resetSelection}>Отменить выбор</button>}</div>
                 {notice && <div className="hint" role="status">{notice}</div>}
-                {error && <div className="error" role="alert">{error}{game.mode !== 'human' && !game.whiteTurn && !busy &&
+                {error && <div className="error" role="alert">{error}{(game.mode === 'ai' || game.mode === 'chatgpt') && !game.whiteTurn && !busy &&
                 <button onClick={() => void act('ai', {})}>Повторить ход соперника</button>}</div>}
-                {game.result &&
+                {game.result && !(game.mode === 'network' && game.playerWhite === false) &&
             <button className="primary end-button" onClick={() => setModal('new')}>Сыграть ещё</button>}
             </section>
 
@@ -90,7 +112,7 @@ export function App() {
             <p className="muted small">Партия начинается. Белые ходят первыми.</p> :
             <ol>{game.history.slice(-6).map((line, i) => <li key={`${game.ply}-${i}`}><span className="history-number">{Math.max(1, game.ply - 5) + i}</span>{line}</li>)}</ol>}
                 </section>
-                <div className="sidebar-footer"><span className="local-dot"/>{game.mode === 'chatgpt' ? 'ChatGPT · OpenAI API' : 'Локальная игра · без интернета'}{game.canClaimDraw && <button onClick={() => void act('draw', {})}>Заявить ничью</button>}
+                <div className="sidebar-footer"><span className="local-dot"/>{game.mode === 'chatgpt' ? 'ChatGPT · OpenAI API' : game.mode === 'network' ? 'Сетевая игра · по IP' : 'Локальная игра · без интернета'}{game.canClaimDraw && canAct && <button onClick={() => void act('draw', {})}>Заявить ничью</button>}
                 </div>
             </aside>
         </main>

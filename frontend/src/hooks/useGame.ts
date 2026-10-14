@@ -28,7 +28,7 @@ export function useGame() {
         }).catch(e => setError(e.message));
     }, []);
     useEffect(() => {
-        if (!game || game.mode === 'human' || game.whiteTurn || game.result || aiInFlight.current)
+        if (!game || (game.mode === 'human' || game.mode === 'network') || game.whiteTurn || game.result || aiInFlight.current)
             return;
         const timer = setTimeout(() => {
             aiInFlight.current = true;
@@ -41,6 +41,28 @@ export function useGame() {
         }, 180);
         return () => clearTimeout(timer);
     }, [game]);
+    useEffect(() => {
+        if (game?.mode !== 'network' && game !== null) return;
+        if (busy) return;
+        let cancelled = false;
+        let timer: ReturnType<typeof setTimeout>;
+        async function poll() {
+            try {
+                const next = await request('state');
+                if (!cancelled) {
+                    setGame(previous => previous?.version === next.version && previous.mode === next.mode
+                        && previous.playerWhite === next.playerWhite ? previous : next);
+                    setError('');
+                }
+            } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : 'Нет связи с сервером'); }
+            if (!cancelled) timer = setTimeout(poll, 1000);
+        }
+        timer = setTimeout(poll, 1000);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [game?.mode, busy]);
+    useEffect(() => {
+        if (game?.mode === 'network') { setFlipped(game.playerWhite === false); setCovered(false); resetSelection(); }
+    }, [game?.mode, game?.playerWhite]);
     async function act(path: CommandPath, body: object) {
         if (!game || busy)
             return;
@@ -112,11 +134,11 @@ export function useGame() {
     }
     const activeCard = game?.hand.find(c => c.id === cardId);
     const cardActions = game?.actions.filter(a => a.kind === 'card' && a.cardId === cardId) ?? [];
-    const canAct = Boolean(game && !busy && !game.result && !covered && !(game.mode !== 'human' && !game.whiteTurn) && game.scouting.length === 0);
+    const canAct = Boolean(game && !busy && !game.result && !covered && (game.mode === 'network' ? game.playerWhite === game.whiteTurn : !(game.mode !== 'human' && !game.whiteTurn)) && game.scouting.length === 0);
     const targets = new Set(activeCard
         ? cardActions.filter(a => firstTarget === null || a.to === firstTarget).map(a => firstTarget === null ? a.to : a.other)
         : (game?.actions ?? []).filter(a => a.kind === 'move' && a.from === selected).map(a => a.to));
-    const visibleWhite = game?.mode === 'human' ? game.whiteTurn : true;
+    const visibleWhite = game?.mode === 'network' ? game.playerWhite !== false : game?.mode === 'human' ? game.whiteTurn : true;
     const pieces = new Map((game?.board ?? []).map(p => [p.square, p]));
     const status = gameStatus(game, busy);
     function clickSquare(s: number) {
@@ -147,7 +169,7 @@ export function useGame() {
         setChoices([]);
         setCardId(cardId === card.id ? null : card.id);
     }
-    const hint = selectionHint(activeCard, firstTarget, selected);
+    const hint = game?.mode === 'network' && game.playerWhite !== game.whiteTurn ? 'Ожидаем ход соперника…' : selectionHint(activeCard, firstTarget, selected);
     return {
         game, error, notice, busy, covered, setCovered, flipped, setFlipped,
         selected, cardId, firstTarget, choices, setChoices, activeCard,

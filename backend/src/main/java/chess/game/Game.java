@@ -33,7 +33,7 @@ public final class Game {
      * Проверяет настройки и создаёт исходную доску с общей перемешанной колодой.
      */
     public Game(String mode, int handLimit, String difficulty) {
-        if (!Set.of("ai", "human", "chatgpt").contains(mode)) throw new IllegalArgumentException("Неизвестный режим");
+        if (!Set.of("ai", "human", "chatgpt", "network").contains(mode)) throw new IllegalArgumentException("Неизвестный режим");
         if (handLimit < 1 || handLimit > 12) throw new IllegalArgumentException("Лимит карт: от 1 до 12");
         if (!Set.of("easy", "normal", "hard").contains(difficulty))
             throw new IllegalArgumentException("Неизвестная сложность");

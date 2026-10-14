@@ -42,6 +42,18 @@ public final class GameSession {
         return GameView.of(game);
     }
 
+    public synchronized boolean isNetwork() { return game.mode.equals("network"); }
+
+    public synchronized Map<String, Object> playerState(boolean white) {
+        var view = GameView.of(game, white, game.whiteTurn == white);
+        view.put("playerWhite", white);
+        return view;
+    }
+
+    public synchronized void requirePlayerTurn(boolean white) {
+        if (game.whiteTurn != white) throw new IllegalArgumentException("Сейчас ход другого игрока");
+    }
+
     /**
      * Создаёт новую партию с возрастающей версией; старые команды становятся недействительны.
      */
@@ -119,7 +131,7 @@ public final class GameSession {
         MoveSelector selector;
         synchronized (this) {
             requireVersion(version);
-            if (game.mode.equals("human") || game.whiteTurn || !game.result.isEmpty())
+            if (game.mode.equals("human") || game.mode.equals("network") || game.whiteTurn || !game.result.isEmpty())
                 throw new IllegalArgumentException("Сейчас не ход соперника");
             if (opponentRunning) throw new IllegalArgumentException("Соперник уже обдумывает ход");
             opponentRunning = true;
@@ -164,7 +176,7 @@ public final class GameSession {
      * В режиме ИИ человек управляет только белыми.
      */
     private void requireHumanTurn() {
-        if (!game.mode.equals("human") && !game.whiteTurn) throw new IllegalArgumentException("Сейчас ход соперника");
+        if (!game.mode.equals("human") && !game.mode.equals("network") && !game.whiteTurn) throw new IllegalArgumentException("Сейчас ход соперника");
     }
 
     /**

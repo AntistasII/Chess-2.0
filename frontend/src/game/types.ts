@@ -34,6 +34,7 @@ export type State = {
     board: Piece[];
     boardSize: BoardSize;
     whiteTurn: boolean;
+    playerWhite?: boolean;
     mode: string;
     difficulty: string;
     handLimit: number;

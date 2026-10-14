@@ -1,0 +1,14 @@
+*
+!Dockerfile
+!backend/
+!backend/src/
+!backend/src/main/
+!backend/src/main/java/
+!backend/src/main/java/**
+!frontend/
+!frontend/**
+frontend/node_modules
+frontend/dist
+frontend/*.tsbuildinfo
+!prompts/
+!prompts/**
