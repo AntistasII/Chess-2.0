@@ -10,6 +10,26 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ChatGptSearchTest {
+    @Test void lunaSelectsLegalActionWithReasoningDisabled() {
+        var sent = new AtomicReference<Map<String, Object>>();
+        var opponent = new ChatGptOpponent("test-key", "gpt-6-luna", "test", (key, body) -> {
+            var request = JsonCodec.readObject(body);
+            sent.set(request);
+            var input = JsonCodec.readObject((String) request.get("input"));
+            var candidates = (List<?>) input.get("candidates");
+            String id = (String) ((List<?>) candidates.getFirst()).getFirst();
+            String text = JsonCodec.toJson(Map.of("actionId", id));
+            return new ChatGptOpponent.Reply(200, JsonCodec.toJson(Map.of("status", "completed", "output",
+                    List.of(Map.of("type", "message", "content", List.of(Map.of("type", "output_text", "text", text)))))));
+        });
+        var game = ReviewedParty.before(78);
+        String choice = opponent.choose(game);
+        assertNotNull(sent.get());
+        assertEquals("gpt-6-luna", sent.get().get("model"));
+        assertEquals(Map.of("effort", "none"), sent.get().get("reasoning"));
+        assertTrue(game.legalActions().stream().anyMatch(a -> a.id().equals(choice)));
+    }
+
     @Test void sendsSearchScoresAndExcludesRecordedRookBlunderWithoutReplacingModelChoice() {
         var selected = new AtomicReference<String>();
         var opponent = new ChatGptOpponent("test-key", "test-model", "test", (key, body) -> {
@@ -52,6 +72,24 @@ class ChatGptSearchTest {
         String choice=opponent.choose(game.observationForCurrentPlayer());
         var after=game.simulate(game.legalActions().stream().filter(a->a.id().equals(choice)).findFirst().orElseThrow());
         assertTrue(after.inCheck(true) && after.legalActions().isEmpty(),choice);
+    }
+
+    @Test void executesVerifiedMatingPlanWithoutPayingForModelChoice() {
+        for (var game : java.util.List.of(chess.game.EndgameFinishTest.mateInTwo(),
+                chess.game.EndgameFinishTest.mateWithFreeKnight())) {
+        var opponent=new ChatGptOpponent("test-key","test-model","test",(key,body)->{
+            throw new AssertionError("A forced mating plan needs no API request");
+        },TestSessions.ai());
+        String choice=opponent.choose(game.observationForCurrentPlayer());
+        var next=game.simulate(game.legalActions().stream().filter(a->a.id().equals(choice)).findFirst().orElseThrow());
+        assertTrue(next.inCheck(false));
+        for(var response:next.legalActions()) {
+            var position=next.simulate(response);
+            assertTrue(position.legalActions().stream().anyMatch(a->{
+                var end=position.simulate(a); return end.inCheck(false)&&end.legalActions().isEmpty();
+            }));
+        }
+        }
     }
 
 }

@@ -45,6 +45,7 @@ final class SearchEngine {
             Game next = game.simulate(action);
             double score = search(next, depth - 1, depth == 1 ? 0 : 2,
                     -Double.MAX_VALUE, Double.MAX_VALUE, 1)
+                    - MovePreferences.repeatedActionPenalty(game, action)
                     - MovePreferences.reversalPenalty(game, action, next)
                     - MovePreferences.castlingLossPenalty(game, action, next)
                     - (action.kind().equals("draw") && EndgameConversion.active(game, side) ? 90 : 0);

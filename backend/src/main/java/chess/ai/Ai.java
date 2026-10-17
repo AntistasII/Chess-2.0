@@ -15,7 +15,7 @@ public final class Ai implements MoveSelector {
     @Override public String choose(Game game) {
         Game observation = game.observationForCurrentPlayer();
         var hints = TacticalHints.forPosition(observation);
-        var allowed = TacticalHints.saferActionIds(hints);
+        var allowed = TacticalHints.saferActionIds(observation, hints);
         if (CardDrawPolicy.shouldDraw(observation, hints, allowed)) return "draw";
         return analyze(observation, allowed).actionId();
     }
@@ -24,8 +24,11 @@ public final class Ai implements MoveSelector {
         Game position = game.observationForCurrentPlayer();
         var limits = properties.searchFor(game.difficulty());
         if (EndgameConversion.active(position, position.whiteTurn())) {
-            var mate = new MatingSearch(limits).find(position, allowed);
+            var matingSearch = new MatingSearch(limits);
+            var mate = matingSearch.find(position, allowed);
             if (mate != null) return new SearchResult(mate.actionId(), java.util.Map.of(), 0, mate.plies());
+            limits = new GameProperties.SearchLimits(limits.depth(), Math.max(1, limits.nodes()-matingSearch.nodesUsed()),
+                    Math.max(1, limits.milliseconds()-matingSearch.elapsedMillis()));
         }
         return new SearchEngine(limits).analyze(position, allowed);
     }

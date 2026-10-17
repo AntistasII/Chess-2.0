@@ -12,12 +12,14 @@ final class TurnRules {
 
     TurnRules(Game game) { this.game = game; }
 
-    List<Action> legalActions() {
+    List<Action> legalActions() { return legalActions(action -> true); }
+
+    List<Action> legalActions(java.util.function.Predicate<Action> filter) {
         if (!game.result.isEmpty()) return List.of();
         var out = new ArrayList<Action>();
         boolean actor = game.whiteTurn;
         for (Action action : pseudoActions())
-            if (!game.simulate(action).inCheck(actor)) out.add(action);
+            if (filter.test(action) && !game.simulate(action).inCheck(actor)) out.add(action);
         return out;
     }
 

@@ -36,7 +36,7 @@ class OpenAiPropertiesTest {
     @Test void defaultsWithoutKey() throws Exception {
         var settings = bind(null, Map.of());
         assertEquals("", settings.apiKey());
-        assertEquals("gpt-4.1-mini", settings.model());
+        assertEquals("gpt-6-luna", settings.model());
         assertEquals(java.time.Duration.ofSeconds(10), settings.responseTimeout());
         assertEquals(10, settings.maxRetries());
     }

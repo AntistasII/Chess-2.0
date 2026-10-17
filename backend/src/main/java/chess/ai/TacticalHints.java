@@ -3,7 +3,7 @@ package chess.ai;
 import chess.game.Game;
 import java.util.*;
 
-/** Одно ответное действие: предупреждения о потерях, а не полноценная оценка шахматного движка. */
+/** Короткая проверка потерь, мата и форсированных шаховых вилок; не полный поиск партии. */
 public final class TacticalHints {
     private TacticalHints() {}
 
@@ -37,9 +37,9 @@ public final class TacticalHints {
                 // остаются её реальные карты, поэтому учитываем карточные спасения.
                 if (afterReply.inCheck(side)) {
                     if (afterReply.legalActions().isEmpty()) mateReplyId = reply.id();
-                    else {
+                    else if (afterReply.pieceAt(reply.to()).type() == 'N') {
                         int fork = CheckingForkAnalysis.materialAfterBestDefence(afterReply, side, baseline, reply.to());
-                        if (fork < worstAfterRecapture) {
+                        if (fork < material(afterReply, side) - baseline && fork < worstAfterRecapture) {
                             worstAfterRecapture = fork;
                             checkingForkReplyId = reply.id();
                         }
@@ -47,7 +47,7 @@ public final class TacticalHints {
                 }
                 // Свой шах может лишь отсрочить вилку. После вынужденного ответа
                 // проверяем лучшую защиту на следующем своём действии, без рекурсии шахов.
-                if (followCountercheck && givesCheck && CheckingForkAnalysis.possibleOnNextMove(afterReply, side)) {
+                if (followCountercheck && givesCheck && immediate >= 320 && CheckingForkAnalysis.possibleOnNextMove(afterReply, side)) {
                     var continuation = forPosition(afterReply, false);
                     var safe = saferActionIds(continuation);
                     if (continuation.stream().noneMatch(h -> Boolean.TRUE.equals(h.get("mateThreat")))) {
@@ -82,6 +82,15 @@ public final class TacticalHints {
 
     /** Мат в один ход имеет приоритет; затем исключаем заметно худшие по материалу варианты. */
     public static Set<String> saferActionIds(List<Map<String, Object>> hints) {
+        return saferActionIds(hints, false);
+    }
+
+    /** При решающем перевесе безопасная матовая атака важнее обязательного взятия. */
+    public static Set<String> saferActionIds(Game position, List<Map<String, Object>> hints) {
+        return saferActionIds(hints, EndgameConversion.active(position, position.whiteTurn()));
+    }
+
+    private static Set<String> saferActionIds(List<Map<String, Object>> hints, boolean converting) {
         var mates = hints.stream().filter(h -> Boolean.TRUE.equals(h.get("mateInOne"))).toList();
         if (!mates.isEmpty()) return actionIds(mates);
         var survivors = hints.stream().filter(h -> "".equals(h.getOrDefault("mateInOneReplyId", ""))).toList();
@@ -92,10 +101,13 @@ public final class TacticalHints {
         var threats = pool.stream().filter(h -> Boolean.TRUE.equals(h.get("mateThreat"))).toList();
         if (!threats.isEmpty()) pool = threats;
         int best = pool.stream().mapToInt(h -> materialSafety(h)).max().orElse(0);
+        // Не отсекаем тихие матовые продолжения только потому, что доступен
+        // бесплатный конь. Отрицательные материальные исходы по-прежнему исключаем.
+        int threshold = converting && best >= 0 ? 0 : best - 75;
         var allowed = new HashSet<String>();
         for (var hint : pool) {
             int value = materialSafety(hint);
-            if (value >= best - 75) allowed.add((String) hint.get("actionId"));
+            if (value >= threshold) allowed.add((String) hint.get("actionId"));
         }
         return allowed;
     }

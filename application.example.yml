@@ -6,7 +6,7 @@ openai:
   response-timeout: 10s
   max-retries: 10
   api-key: "${OPENAI_API_KEY:}"
-  model: "${OPENAI_MODEL:gpt-4.1-mini}"
+  model: "${OPENAI_MODEL:gpt-6-luna}"
 
 chess:
   game:

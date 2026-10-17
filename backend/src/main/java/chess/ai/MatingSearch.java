@@ -7,13 +7,14 @@ import java.util.Set;
 /** Ограниченный поиск мата за два своих хода через шахи. Скрытые карты остаются неизвестными. */
 final class MatingSearch {
     record Plan(String actionId, int plies) {}
+    private final long started = System.nanoTime();
     private final long deadline;
     private final int limit;
     private int nodes;
 
     MatingSearch(SearchLimits settings) {
         deadline = System.nanoTime() + Math.min(300,Math.max(1,settings.milliseconds()/4))*1_000_000;
-        limit = Math.max(1,Math.min(600,settings.nodes()/3));
+        limit = Math.max(1,Math.min(2000,settings.nodes()/3));
     }
 
     Plan find(Game game, Set<String> allowed) {
@@ -44,8 +45,12 @@ final class MatingSearch {
         return null;
     }
 
+    int nodesUsed() { return nodes; }
+    long elapsedMillis() { return (System.nanoTime() - started + 999_999) / 1_000_000; }
+
     private void tick() {
-        if (++nodes > limit || System.nanoTime() >= deadline || Thread.currentThread().isInterrupted()) throw new LimitReached();
+        if (nodes >= limit || System.nanoTime() >= deadline || Thread.currentThread().isInterrupted()) throw new LimitReached();
+        nodes++;
     }
     private static final class LimitReached extends RuntimeException {
         LimitReached() { super(null,null,false,false); }

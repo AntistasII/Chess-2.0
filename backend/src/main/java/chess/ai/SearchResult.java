@@ -4,10 +4,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Оценки всех корневых кандидатов на последней полностью завершённой глубине. */
+/** Оценки завершённой итерации или отдельно проверенная матовая линия по известной позиции. */
 public record SearchResult(String actionId, Map<String, Double> scores, int depth, int matePlies) {
     public SearchResult(String actionId, Map<String, Double> scores, int depth) { this(actionId, scores, depth, 0); }
-    public SearchResult { scores = Map.copyOf(scores); }
+    public SearchResult { scores = Map.copyOf(scores); if (matePlies < 0) throw new IllegalArgumentException(); }
 
     /** Сохраняет близкие по оценке варианты; незавершённый поиск не ограничивает выбор. */
     public Set<String> competitiveActions() {

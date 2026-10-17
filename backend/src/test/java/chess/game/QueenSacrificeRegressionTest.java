@@ -61,7 +61,6 @@ class QueenSacrificeRegressionTest {
         var hints = TacticalHints.forPosition(game);
         var safe = TacticalHints.saferActionIds(hints);
         assertFalse(safe.contains("move:49:33:"), "b7-b5 ignores threats and offers an undefended pawn");
-        System.out.println("OLD62 "+safe+" hints="+hints.stream().filter(h->h.get("actionId").equals("move:52:44:") || safe.contains(h.get("actionId"))).toList());
         assertTrue(safe.contains("move:52:44:"), "e7-e6 removes the bishop's target and opens rook's defense");
     }
 

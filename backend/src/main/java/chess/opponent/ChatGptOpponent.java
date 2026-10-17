@@ -80,7 +80,7 @@ public final class ChatGptOpponent extends Opponent {
         var input = decisionInput(position);
         @SuppressWarnings("unchecked")
         var hints = (List<Map<String, Object>>) input.get("tacticalHints");
-        Set<String> allowed = TacticalHints.saferActionIds(hints);
+        Set<String> allowed = TacticalHints.saferActionIds(position, hints);
         SearchResult review = null;
         if (CardDrawPolicy.shouldDraw(position, hints, allowed)) allowed = Set.of("draw");
         else if (advisor != null && allowed.size() > 1) {
@@ -112,11 +112,14 @@ public final class ChatGptOpponent extends Opponent {
                 "required", List.of("actionId"));
         input.put("learnedLessons", memory == null ? List.of() : memory.observe(position));
         if (actions.size() == 1) return actions.get(0).id();
-        String body = JsonCodec.toJson(Map.of("model", model, "store", false,
+        var request = new LinkedHashMap<String, Object>(Map.of("model", model, "store", false,
                 "instructions", prompt, "input", JsonCodec.toJson(compactInput(input)),
                 "prompt_cache_key", "card-chess-v2",
                 "max_output_tokens", 2048, "text", Map.of("format", Map.of(
                         "type", "json_schema", "name", "chess_action", "strict", true, "schema", schema))));
+        // Luna иначе использует medium: для короткого выбора хода отключаем рассуждение.
+        if (model.equals("gpt-6-luna")) request.put("reasoning", Map.of("effort", "none"));
+        String body = JsonCodec.toJson(request);
         try {
             Reply response = transport.send(apiKey, body);
             if (response.status() != 200) throw new Failure(switch (response.status()) {

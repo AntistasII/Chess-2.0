@@ -274,14 +274,29 @@ public final class Game {
         return new MoveRules(this).attacked(target, byWhite);
     }
 
-    /**
-     * Исполняет кандидатов на копии и отбрасывает те, после которых свой король под шахом.
-     */
+    /** Законные обратные взятия; фильтрация до симуляции не перебирает ненужные карты. */
+    public List<Action> legalRecaptures(int square) {
+        return new TurnRules(this).legalActions(a -> a.kind().equals("move") && a.to() == square);
+    }
+
+    /** Варианты восстановления материала: обратное взятие, возрождение, обращение или отмена. */
+    public List<Action> materialRecoveryActions(int square) {
+        return new TurnRules(this).legalActions(a -> {
+            if (a.kind().equals("move")) return a.to() == square;
+            if (!a.kind().equals("card")) return false;
+            return hand(whiteTurn).stream().anyMatch(c -> c.id() == a.cardId() && switch (c.type()) {
+                case REVIVE_PAWN, REVIVE_PIECE, CONVERT, UNDO_MOVE -> true;
+                default -> false;
+            });
+        });
+    }
+
     /** Геометрические варианты фигуры для оценки подвижности; не список законных команд. */
     public List<Action> movementOptions(int square) {
         return List.copyOf(new MoveRules(this).movesFrom(square));
     }
 
+    /** Исполняет кандидатов на копии и отбрасывает те, после которых свой король под шахом. */
     public List<Action> legalActions() {
         return new TurnRules(this).legalActions();
     }
