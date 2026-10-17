@@ -1,53 +1,46 @@
 package chess.game;
 
 import java.util.Map;
+import chess.config.GameProperties;
+import chess.opponent.Opponent;
+import chess.opponent.OpponentRegistry;
 
 /**
  * Владеет локальной партией и последовательно выполняет команды с проверкой версии, независимо от HTTP.
  */
 public final class GameSession {
     private Game game;
-    private final MoveSelector opponent;
-    private final MoveSelector chatGpt;
+    private final OpponentRegistry opponents;
+    private final GameProperties settings;
     private boolean opponentRunning;
 
-    public GameSession(MoveSelector opponent, MoveSelector chatGpt) {
-        this(new Game("ai", 3, "normal"), opponent, chatGpt);
+    public GameSession(GameProperties settings, String mode, MoveSelector localAi, MoveSelector chatGpt) {
+        this(new Game(mode, settings.forMode(mode).handLimit(), settings.forMode(mode).difficulty(), settings.backRank()),
+                settings, localAi, chatGpt);
     }
 
-    /**
-     * Создаёт сессию и подключает выбранную реализацию компьютерного соперника.
-     */
-    public GameSession(MoveSelector opponent) {
-        this(new Game("ai", 3, "normal"), opponent);
-    }
-
-    /**
-     * Конструктор с готовой партией для сценариев и проверок.
-     */
-    GameSession(Game game, MoveSelector opponent) {
-        this(game, opponent, position -> { throw new IllegalArgumentException("ChatGPT не подключён к серверу"); });
-    }
-
-    GameSession(Game game, MoveSelector opponent, MoveSelector chatGpt) {
+    /** Позволяет подключить готовую позицию без замены её настроек. */
+    public GameSession(Game game, GameProperties settings, MoveSelector localAi, MoveSelector chatGpt) {
         this.game = game;
-        this.chatGpt = java.util.Objects.requireNonNull(chatGpt);
-        this.opponent = java.util.Objects.requireNonNull(opponent);
+        this.settings = settings;
+        this.opponents = new OpponentRegistry(localAi, chatGpt);
     }
 
     /**
      * Возвращает снимок состояния под тем же монитором, что и изменения партии.
      */
     public synchronized Map<String, Object> state() {
-        return GameView.of(game);
+        return withDefaults(GameView.of(game));
     }
 
-    public synchronized boolean isNetwork() { return game.mode.equals("network"); }
+    public synchronized boolean isNetwork() {
+        return currentOpponent().network();
+    }
 
     public synchronized Map<String, Object> playerState(boolean white) {
         var view = GameView.of(game, white, game.whiteTurn == white);
         view.put("playerWhite", white);
-        return view;
+        return withDefaults(view);
     }
 
     public synchronized void requirePlayerTurn(boolean white) {
@@ -57,14 +50,30 @@ public final class GameSession {
     /**
      * Создаёт новую партию с возрастающей версией; старые команды становятся недействительны.
      */
-    public synchronized Map<String, Object> newGame(String mode, int handLimit, String difficulty) {
-        Game next = new Game(mode, handLimit, difficulty);
+    public synchronized Map<String, Object> newGame(String mode, Integer handLimit, String difficulty) {
+        if (mode == null) mode = settings.defaultMode();
+        var defaults = settings.forMode(mode);
+        Game next = new Game(mode, handLimit == null ? defaults.handLimit() : handLimit,
+                difficulty == null ? defaults.difficulty() : difficulty, settings.backRank());
         next.version = game.version + 1;
         game = next;
         return state();
     }
 
-    /** Сохраняет позицию, включая скрытые карты, только в локальный файл. */
+    /** Полный перезапуск использует настройки режима из конфигурации. */
+    public synchronized void reset() {
+        newGame(isNetwork() ? "network" : settings.defaultMode(), null, null);
+    }
+
+    private Map<String, Object> withDefaults(Map<String, Object> view) {
+        view.put("defaultMode", settings.defaultMode());
+        view.put("newGameDefaults", settings.opponents());
+        return view;
+    }
+
+    /**
+     * Сохраняет позицию, включая скрытые карты, только в локальный файл.
+     */
     public synchronized Map<String, Object> save(long version) throws java.io.IOException {
         requireVersion(version);
         GameSave.write(game, java.nio.file.Path.of("data/saved-game.json"));
@@ -79,14 +88,19 @@ public final class GameSession {
     public synchronized Map<String, Object> importGame(long version, Map<String, Object> data) {
         requireVersion(version);
         Game restored;
-        try { restored = GameSave.decode(data); }
-        catch (RuntimeException e) { throw new IllegalArgumentException("Файл сохранения повреждён или несовместим."); }
+        try {
+            restored = GameSave.decode(data);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Файл сохранения повреждён или несовместим.");
+        }
         restored.version = game.version + 1;
         game = restored;
         return state();
     }
 
-    /** Подменяет партию только после полного чтения снимка; старые команды отклоняются. */
+    /**
+     * Подменяет партию только после полного чтения снимка; старые команды отклоняются.
+     */
     public synchronized Map<String, Object> load(long version) throws java.io.IOException {
         requireVersion(version);
         Game restored = GameSave.read(java.nio.file.Path.of("data/saved-game.json"));
@@ -125,19 +139,21 @@ public final class GameSession {
         return state();
     }
 
-    /** Запрос соперника не блокирует чтение состояния и создание новой партии. */
+    /**
+     * Запрос соперника не блокирует чтение состояния и создание новой партии.
+     */
     public Map<String, Object> runAi(long version) {
         Game snapshot;
-        MoveSelector selector;
+        Opponent opponent;
         synchronized (this) {
             requireVersion(version);
-            if (game.mode.equals("human") || game.mode.equals("network") || game.whiteTurn || !game.result.isEmpty())
+            if (!currentOpponent().automatic() || game.whiteTurn || !game.result.isEmpty())
                 throw new IllegalArgumentException("Сейчас не ход соперника");
             if (opponentRunning) throw new IllegalArgumentException("Соперник уже обдумывает ход");
             opponentRunning = true;
             snapshot = game.copy();
             snapshot.history = new java.util.ArrayList<>(game.history);
-            selector = game.mode.equals("chatgpt") ? chatGpt : opponent;
+            opponent = currentOpponent();
         }
         try {
             // Скрываем чужую руку и колоду до передачи стратегии.
@@ -147,21 +163,23 @@ public final class GameSession {
                 observation.deck.set(0, snapshot.deck.get(0));
                 observation.deck.set(1, snapshot.deck.get(1));
             }
-            String id = selector.choose(observation);
+            String id = opponent.choose(observation);
             synchronized (this) {
                 requireVersion(version);
                 Action action = game.legalActions().stream().filter(a -> a.id().equals(id)).findFirst()
                         .orElseThrow(() -> new IllegalArgumentException("Соперник вернул недопустимый ход. Повторите запрос."));
                 // ChatGPT сначала расходует разведку, затем решает порядок по раскрытым картам.
-                if (game.mode.equals("chatgpt") && game.scouting < 0 && action.kind().equals("card")
+                if (opponent.requiresScoutPreview() && game.scouting < 0 && action.kind().equals("card")
                         && game.hand(game.whiteTurn).stream().anyMatch(c -> c.id() == action.cardId()
-                            && c.type() == chess.cards.CardType.SCOUT)) {
+                        && c.type() == chess.cards.CardType.SCOUT)) {
                     game.startScout(action.cardId());
                 } else game.play(id);
                 return state();
             }
         } finally {
-            synchronized (this) { opponentRunning = false; }
+            synchronized (this) {
+                opponentRunning = false;
+            }
         }
     }
 
@@ -172,11 +190,14 @@ public final class GameSession {
         if (version != game.version) throw new StalePositionException();
     }
 
-    /**
-     * В режиме ИИ человек управляет только белыми.
-     */
+    private Opponent currentOpponent() {
+        return opponents.forMode(game.mode);
+    }
+
+    /** В автоматическом режиме человек управляет только белыми. */
     private void requireHumanTurn() {
-        if (!game.mode.equals("human") && !game.mode.equals("network") && !game.whiteTurn) throw new IllegalArgumentException("Сейчас ход соперника");
+        if (currentOpponent().automatic() && !game.whiteTurn)
+            throw new IllegalArgumentException("Сейчас ход соперника");
     }
 
     /**

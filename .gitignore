@@ -13,3 +13,7 @@ frontend/*.tsbuildinfo
 /application.yml
 
 /data/
+
+# Maven / Spring Boot
+backend/target/
+target/

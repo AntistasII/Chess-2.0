@@ -10,9 +10,8 @@ import { NewGameForm } from './components/NewGameForm';
 export function App() {
     const { game, error, notice, busy, covered, setCovered, flipped, setFlipped, selected, cardId, firstTarget, choices, setChoices, activeCard, cardActions, canAct, targets, visibleWhite, status, hint, resetSelection, act, execute, clickSquare, selectCard, downloadGame, uploadGame, restartGame, } = useGame();
     const [modal, setModal] = useState<'new' | 'rules' | null>(null);
-    const [mode, setMode] = useState('ai');
-    const [limit, setLimit] = useState(3);
-    const [difficulty, setDifficulty] = useState('normal');
+    const [selectedMode, setMode] = useState<string | null>(null);
+    const [gameOptions, setGameOptions] = useState<Record<string, { handLimit?: number; difficulty?: string }>>({});
     const [loginCode, setLoginCode] = useState('');
     const [loginError, setLoginError] = useState('');
     const [loggingIn, setLoggingIn] = useState(false);
@@ -37,6 +36,16 @@ export function App() {
         </form>}
         <button onClick={() => location.reload()}>Повторить</button>
     </main>;
+    const mode = selectedMode ?? game.defaultMode;
+    const defaults = game.newGameDefaults[mode];
+    const limit = gameOptions[mode]?.handLimit ?? defaults.handLimit;
+    const difficulty = gameOptions[mode]?.difficulty ?? defaults.difficulty;
+    const setLimit = (handLimit: number) => setGameOptions(previous => ({
+        ...previous, [mode]: { ...previous[mode], handLimit },
+    }));
+    const setDifficulty = (difficulty: string) => setGameOptions(previous => ({
+        ...previous, [mode]: { ...previous[mode], difficulty },
+    }));
     return <div className="app">
         <header className="topbar"><a className="brand" href="/" aria-label="Шахматы с картами"><span className="brand-mark">♞</span><span>Шахматы <span className="brand-light">с картами</span></span></a>
             <nav>
@@ -75,7 +84,7 @@ export function App() {
                     </div>
                     <div className="enemy-hand" title={`${game.enemyCards} скрытых карт`}><Icon type="deck"/><span>{game.enemyCards}</span></div>
                 </div>
-                <ChessBoard board={game.board} size={game.boardSize} check={game.check} flipped={flipped} selected={selected} firstTarget={firstTarget} targets={targets} spellActive={Boolean(activeCard)} lastAction={game.history.at(-1) ?? ''} onSquare={clickSquare}/>
+                <ChessBoard effects={covered ? game.squareEffects?.filter(e => e.type !== 'HIDDEN_TRAP') : game.squareEffects} board={game.board} size={game.boardSize} check={game.check} flipped={flipped} selected={selected} firstTarget={firstTarget} targets={targets} spellActive={Boolean(activeCard)} lastAction={game.history.at(-1) ?? ''} onSquare={clickSquare}/>
                 <div className="player-row bottom">
                     <div className="player-info"><span className="avatar light">{visibleWhite ? '♔' : '♚'}</span>
                         <div>

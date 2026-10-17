@@ -1,10 +1,13 @@
 *
 !Dockerfile
+!pom.xml
 !backend/
 !backend/src/
 !backend/src/main/
 !backend/src/main/java/
 !backend/src/main/java/**
+!backend/src/main/resources/
+!backend/src/main/resources/**
 !frontend/
 !frontend/**
 frontend/node_modules

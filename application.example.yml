@@ -1,4 +1,40 @@
+server:
+  port: ${PORT:8080}
+
 # Вставьте API-ключ между кавычками и перезапустите Java-сервер.
 openai:
-  api-key: ""
-  model: "gpt-4.1-mini"
+  response-timeout: 10s
+  max-retries: 10
+  api-key: "${OPENAI_API_KEY:}"
+  model: "${OPENAI_MODEL:gpt-4.1-mini}"
+
+chess:
+  game:
+    back-rank: RNBQKBNR
+    default-mode: ai
+    search:
+      easy:
+        depth: 2
+        nodes: 250
+        milliseconds: 500
+      normal:
+        depth: 4
+        nodes: 1400
+        milliseconds: 1500
+      hard:
+        depth: 5
+        nodes: 4500
+        milliseconds: 3000
+    opponents:
+      ai:
+        hand-limit: 3
+        difficulty: normal
+      chatgpt:
+        hand-limit: 3
+        difficulty: normal
+      network:
+        hand-limit: 3
+        difficulty: normal
+      human:
+        hand-limit: 3
+        difficulty: normal

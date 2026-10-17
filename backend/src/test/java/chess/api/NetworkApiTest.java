@@ -1,7 +1,9 @@
 package chess.api;
 
+import chess.controller.GameController;
+
 import chess.game.GameSession;
-import chess.json.Json;
+import chess.serialization.JsonCodec;
 import com.sun.net.httpserver.*;
 import java.io.*;
 import java.net.*;
@@ -10,22 +12,23 @@ import java.util.*;
 
 /** Two independent browsers, tested at the HTTP boundary without opening sockets. */
 public final class NetworkApiTest {
-    private static final class Exchange extends HttpExchange {
+    static final class Exchange extends HttpExchange {
         final Headers request = new Headers(), response = new Headers();
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
-        final String path, method;
+        final String path;
+        String method;
         final boolean host;
         InputStream input;
         int status;
         Exchange(String path, boolean host, Map<String, Object> body, String cookie) {
             this.path = path; this.host = host; method = body == null ? "GET" : "POST";
-            input = new ByteArrayInputStream(body == null ? new byte[0] : Json.stringify(body).getBytes(StandardCharsets.UTF_8));
+            input = new ByteArrayInputStream(body == null ? new byte[0] : JsonCodec.toJson(body).getBytes(StandardCharsets.UTF_8));
             request.set("Host", host ? "localhost:8080" : "192.168.1.2:8080");
             request.set("Origin", "http://" + request.getFirst("Host"));
             request.set("Content-Type", "application/json");
             if (cookie != null) request.set("Cookie", cookie);
         }
-        Map<String, Object> json() { return Json.object(output.toString(StandardCharsets.UTF_8)); }
+        Map<String, Object> json() { return JsonCodec.readObject(output.toString(StandardCharsets.UTF_8)); }
         public Headers getRequestHeaders() { return request; }
         public Headers getResponseHeaders() { return response; }
         public URI getRequestURI() { return URI.create(path); }
@@ -46,12 +49,12 @@ public final class NetworkApiTest {
     }
     private static int checks;
     private static void check(boolean ok, String message) { checks++; if (!ok) throw new AssertionError(message); }
-    private static Exchange call(ApiHandler api, String path, boolean host, Map<String, Object> body, String cookie) throws IOException {
+    private static Exchange call(GameController api, String path, boolean host, Map<String, Object> body, String cookie) throws IOException {
         Exchange exchange = new Exchange(path, host, body, cookie); api.handle(exchange); return exchange;
     }
     public static void main(String[] args) throws Exception {
-        var session = new GameSession(g -> { throw new AssertionError("Network must not invoke AI"); });
-        var api = new ApiHandler(session);
+        var session = chess.game.TestSessions.create(g -> { throw new AssertionError("Network must not invoke AI"); });
+        var api = new GameController(session);
         check(call(api, "/api/state", false, null, null).status == 403, "Guest cannot read local games");
         var start = call(api, "/api/new", true, Map.of("mode", "network"), null);
         check(start.status == 200 && start.json().get("playerWhite").equals(true), "Host owns white");
@@ -81,9 +84,9 @@ public final class NetworkApiTest {
         var foreign = new Exchange("/api/action", false, Map.of("version", version, "actionId", "draw"), cookie);
         foreign.request.set("Origin", "http://unrelated.example"); api.handle(foreign);
         check(foreign.status == 403, "Foreign-origin commands rejected");
-        var cloudSession = new GameSession(g -> "draw");
+        var cloudSession = chess.game.TestSessions.create(g -> "draw");
         cloudSession.newGame("network", 3, "normal");
-        var cloud = new ApiHandler(cloudSession, "test-owner-code-123456", "test-friend-code-654321");
+        var cloud = new GameController(cloudSession, "test-owner-code-123456", "test-friend-code-654321");
         check(call(cloud, "/api/state", true, null, null).status == 401, "Proxy loopback cannot bypass cloud login");
         check(call(cloud, "/api/login", false, Map.of("code", "wrong"), null).status == 401, "Wrong code rejected");
         var login = call(cloud, "/api/login", false, Map.of("code", "test-owner-code-123456"), null);

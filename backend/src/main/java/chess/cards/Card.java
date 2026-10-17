@@ -1,21 +1,28 @@
 package chess.cards;
 
+import chess.game.Action;
+import java.util.List;
 import java.util.Objects;
 
 /**
  * Неизменяемая карта: идентификатор отличает копии одного заклинания в общей колоде.
- * Выбор целей и применение заклинания выполняет CardRules.
+ * Наследники определяют допустимые цели и эффект; игровой движок проверяет шах и расходует карту.
  */
-public final class Card {
+public abstract class Card {
     private final int id;
     private final CardType type;
+    private final String name;
+    private final int durationTurns;
 
     /**
      * Создаёт карту; отрицательные идентификаторы используются для скрытых карт ИИ.
      */
-    public Card(int id, CardType type) {
+    protected Card(int id, CardType type, String name) {
         this.id = id;
         this.type = Objects.requireNonNull(type);
+        this.name = Objects.requireNonNull(name);
+        CardDefinition definition = getClass().getDeclaredAnnotation(CardDefinition.class);
+        durationTurns = definition == null ? 0 : definition.durationTurns();
     }
 
     /**
@@ -36,8 +43,30 @@ public final class Card {
      * Название для истории ходов и интерфейса.
      */
     public String name() {
-        return CardCatalog.name(type);
+        return name;
     }
+
+    public final int durationTurns() { return durationTurns; }
+
+    public final int freezeTurns() {
+        CardDefinition definition = getClass().getDeclaredAnnotation(CardDefinition.class);
+        return definition == null ? 0 : definition.freezeTurns();
+    }
+
+    /** Один ход владельца цели равен двум полуходам партии. */
+    protected final int effectEndsAt(int ply) {
+        if (durationTurns <= 0) throw new IllegalStateException("Для временной карты задайте durationTurns в @CardDefinition");
+        return Math.addExact(ply, Math.multiplyExact(durationTurns, 2));
+    }
+
+    /** Кандидаты до проверки безопасности собственного короля. */
+    public abstract List<Action> actions(CardContext context);
+
+    /** Эффект уже выбранного законного действия; расход карты выполняет движок. */
+    public abstract void apply(CardContext context, Action action);
+
+    // для определения ничьи
+    public boolean resetsHalfMoveClock() { return true; }
 
     /**
      * Сохраняет сравнение по значениям, которое раньше обеспечивал record.

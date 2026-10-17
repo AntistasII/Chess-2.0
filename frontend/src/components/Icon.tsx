@@ -5,6 +5,22 @@ type IconType = CardType | 'deck' | 'settings' | 'book';
 
 function shape(type: IconType): ReactNode {
     switch (type) {
+        case 'UNDO_MOVE':
+            return <path d="M9 16h17a13 13 0 1 1-11 20M9 16l9-9M9 16l9 9"/>;
+        case 'EXPAND_TOP':
+        case 'EXPAND_BOTTOM':
+        case 'EXPAND_LEFT':
+        case 'EXPAND_RIGHT':
+            return <><rect x="7" y="7" width="34" height="34" rx="2"/><path d="M24 13v22M13 24h22"/></>;
+        case 'DESTROY_CARD':
+            return <><rect x="12" y="6" width="25" height="36" rx="3"/><path d="m17 16 15 16m0-16L17 32"/></>;
+        case 'SACRIFICE':
+            return <path d="M9 39h30M14 32l10-22 10 22H14M18 20h12M24 5v5"/>;
+        case 'TRAP':
+        case 'HIDDEN_TRAP':
+            return <><circle cx="24" cy="26" r="15"/><path d="m12 17 8 9-7 8m23-17-8 9 7 8M24 11v8m0 15v7"/></>;
+        case 'WHITE_HOLE':
+            return <><circle cx="24" cy="24" r="9"/><path d="M24 3v7m0 28v7M3 24h7m28 0h7M9 9l5 5m20 20 5 5M9 39l5-5m20-20 5-5"/></>;
         case 'SHIELD':
             return <path d="M24 5 40 11v12c0 9-8 16-16 20C16 39 8 32 8 23V11zM24 6v35"/>;
         case 'FREEZE':

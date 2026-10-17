@@ -16,16 +16,17 @@ export async function request(path: CommandPath | 'state', body?: object): Promi
     return data;
 }
 
-/** Первоначальный запрос плюс максимум пять повторов; версия позиции остаётся прежней. */
+/** Число повторов приходит из серверной конфигурации; версия позиции остаётся прежней. */
 export async function requestOpponent(
     body: object,
+    maxRetries: number,
     send: (body: object) => Promise<State> = body => request('ai', body),
     pause: (ms: number) => Promise<void> = ms => new Promise(resolve => setTimeout(resolve, ms)),
 ): Promise<State> {
     for (let retry = 0; ; retry++) {
         try { return await send(body); }
         catch (error) {
-            if (!(error instanceof ApiError) || error.status !== 502 || retry >= 5) throw error;
+            if (!(error instanceof ApiError) || error.status !== 502 || retry >= maxRetries) throw error;
             await pause(Math.min(1000 * (retry + 1), 4000));
         }
     }

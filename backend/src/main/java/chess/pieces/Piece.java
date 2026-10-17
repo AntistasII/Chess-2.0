@@ -1,52 +1,47 @@
 package chess.pieces;
 
+import chess.game.Action;
+import java.util.List;
+
 /**
- * Шахматная фигура: хранит тип, сторону, факт движения и эффекты карт.
- * Клетку хранит доска Game, а правила движения определяет MoveRules.
+ * Общее состояние фигуры. Тип задаёт наследник, клетку хранит Board,
+ * а правила движения и атак определяют наследники.
  */
-public final class Piece {
+public abstract class Piece {
     private final int id;
-    // P — пешка, N — конь, B — слон, R — ладья, Q — ферзь, K — король.
-    private char type;
     private boolean white;
     private boolean moved;
     private boolean boost;
     private boolean shield;
-    // Номер полухода окончания эффекта; ноль означает отсутствие эффекта.
+    // Полуход окончания эффекта; 0 — эффекта нет.
     private int frozenUntil;
     private int astralUntil;
 
-    /**
-     * Идентификатор фигуры сохраняется при копировании позиции.
-     */
+    protected Piece(int id, boolean white) {
+        this.id = id;
+        this.white = white;
+    }
+
+    public abstract char type();
+
+    /** Кандидаты на ход; окончательную безопасность короля проверяет игровой движок. */
+    public abstract List<Action> moves(MovementContext context, int from);
+
+    /** Атаки отличаются от ходов: например, пешка атакует пустую клетку по диагонали. */
+    public abstract boolean attacks(MovementContext context, int from, int target);
+
     public int id() {
         return id;
     }
 
-    /**
-     * Текущий шахматный тип; может измениться при превращении пешки.
-     */
-    public char type() {
-        return type;
-    }
-
-    /**
-     * Сторона, которой сейчас принадлежит фигура.
-     */
     public boolean white() {
         return white;
     }
 
-    /**
-     * Факт движения влияет на первый ход пешки и право рокировки.
-     */
     public boolean moved() {
         return moved;
     }
 
-    /**
-     * Усиление и щит расходуются при любом следующем движении.
-     */
     public boolean boost() {
         return boost;
     }
@@ -55,9 +50,6 @@ public final class Piece {
         return shield;
     }
 
-    /**
-     * Полуход окончания временных эффектов; ноль означает отсутствие эффекта.
-     */
     public int frozenUntil() {
         return frozenUntil;
     }
@@ -67,88 +59,41 @@ public final class Piece {
     }
 
     /**
-     * Накладывает усиление без движения фигуры.
+     * Заморозка запрещает движение, но сохраняет атаки.
      */
-    public void enableBoost() {
-        boost = true;
+    public boolean frozen() {
+        return frozenUntil > 0;
     }
 
     /**
-     * Защищает от вражеских заклинаний до следующего движения.
-     */
-    public void protect() {
-        shield = true;
-    }
-
-    /**
-     * Задаёт момент окончания заморозки.
-     */
-    public void freezeUntil(int ply) {
-        frozenUntil = ply;
-    }
-
-    /**
-     * Задаёт момент возвращения из астрала.
-     */
-    public void sendToAstralUntil(int ply) {
-        astralUntil = ply;
-    }
-
-    /**
-     * Меняет владельца; направление движения пешки определяется её стороной.
-     */
-    public void changeSide(boolean white) {
-        this.white = white;
-    }
-
-    /**
-     * Отмечает движение без расходования эффектов, например при смене стороны.
-     */
-    public void markMoved() {
-        moved = true;
-    }
-
-    /**
-     * Обновляет тип при превращении пешки; допустимые варианты проверяет игровое ядро.
-     */
-    public void promoteTo(char type) {
-        this.type = type;
-    }
-
-    /**
-     * Новая фигура появляется без эффектов и без выполненных ходов.
-     */
-    public Piece(int id, char type, boolean white) {
-        this.id = id;
-        this.type = type;
-        this.white = white;
-    }
-
-    /**
-     * Независимая копия для проверки законности и поиска ИИ.
-     */
-    public Piece copy() {
-        var piece = new Piece(id, type, white);
-        piece.moved = moved;
-        piece.boost = boost;
-        piece.shield = shield;
-        piece.frozenUntil = frozenUntil;
-        piece.astralUntil = astralUntil;
-        return piece;
-    }
-
-    /**
-     * Фигура в астрале остаётся на зарезервированной клетке, но не атакует.
+     * В астрале фигура занимает клетку, но не атакует.
      */
     public boolean astral() {
         return astralUntil > 0;
     }
 
-    /**
-     * Заморозка запрещает движение, но сохраняет атаки фигуры.
-     */
-    public boolean frozen() {
-        return frozenUntil > 0;
+    public void changeSide(boolean white) {
+        this.white = white;
+    }
+
+    public void markMoved() {
+        moved = true;
+    }
+
+    public void enableBoost() {
+        boost = true;
+    }
+
+    public void protect() {
+        shield = true;
+    }
+
+    public void freezeUntil(int ply) {
+        frozenUntil = ply;
+    }
+
+    public void sendToAstralUntil(int ply) {
+        astralUntil = ply;
     }
 
     /**
@@ -160,21 +105,38 @@ public final class Piece {
         shield = false;
     }
 
-    /**
-     * Завершает временные эффекты после окончания соответствующего полухода.
-     */
     public void expireEffects(int ply) {
         if (frozenUntil > 0 && frozenUntil <= ply) frozenUntil = 0;
         if (astralUntil > 0 && astralUntil <= ply) astralUntil = 0;
     }
 
     /**
-     * Очищение снимает эффекты, сохраняя сторону и факт прежнего движения.
+     * Очищение сохраняет сторону и факт движения.
      */
     public void clearEffects() {
         boost = false;
         shield = false;
         frozenUntil = 0;
         astralUntil = 0;
+    }
+
+    /**
+     * Независимая копия для проверки ходов и поиска ИИ.
+     */
+    public Piece copy() {
+        return copyAs(type());
+    }
+
+    /**
+     * Копирование и превращение используют один способ переноса состояния.
+     */
+    protected final Piece copyAs(char type) {
+        Piece copy = PieceFactory.create(id, type, white);
+        copy.moved = moved;
+        copy.boost = boost;
+        copy.shield = shield;
+        copy.frozenUntil = frozenUntil;
+        copy.astralUntil = astralUntil;
+        return copy;
     }
 }

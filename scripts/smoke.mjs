@@ -6,6 +6,12 @@ async function call(path, body) {
 }
 const page=await fetch(base); assert.equal(page.status,200);assert.match(await page.text(),/Шахматы с картами/);
 let {data:game}=await call('new',{mode:'ai',difficulty:'normal',handLimit:5});
+assert.ok(game.defaultMode in game.newGameDefaults);
+for (const mode of ['ai', 'chatgpt', 'network', 'human']) {
+  const settings = game.newGameDefaults[mode];
+  assert.ok(settings.handLimit >= 1 && settings.handLimit <= 12);
+  assert.ok(['easy', 'normal', 'hard'].includes(settings.difficulty));
+}
 assert.deepEqual(game.boardSize,{width:8,height:8,originFile:0,originRank:0});
 assert.equal(game.hand.length,0);assert.equal(game.actions.length,21);assert.equal(game.handLimit,5);
 const invalid=await call('action',{version:game.version,actionId:'move:4:60:'});assert.equal(invalid.status,400);

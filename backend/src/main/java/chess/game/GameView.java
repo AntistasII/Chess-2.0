@@ -26,13 +26,21 @@ final class GameView {
         for (int s = 0; s < game.board.size(); s++) {
             Piece p = game.board.get(s);
             if (p != null)
-                pieces.add(Map.of("square", s, "id", p.id(), "type", "" + p.type(), "white", p.white(), "boost", p.boost(), "shield", p.shield(), "frozen", p.frozen(), "astral", p.astral(), "astralTurns", Math.max(0, (p.astralUntil() - game.ply + 1) / 2)));
+                pieces.add(Map.of("square", s, "id", p.id(), "type", "" + p.type(), "white", p.white(), "boost", p.boost(), "shield", p.shield(), "frozen", p.frozen(), "astral", p.astral(), "frozenTurns", Math.max(0, (p.frozenUntil() - game.ply + 1) / 2), "astralTurns", Math.max(0, (p.astralUntil() - game.ply + 1) / 2)));
         }
         out.put("board", pieces);
+        out.put("squareEffects", game.squareEffects.entrySet().stream()
+                .filter(e -> e.getValue().visibleTo(visible))
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> Map.of("square", e.getKey(), "type", e.getValue().type().name(),
+                        "white", e.getValue().white(), "turns", Math.max(0, (e.getValue().expiresAt() - game.ply + 1) / 2),
+                        "freezeTurns", e.getValue().freezeTurns())).toList());
         var geometry = game.boardGeometry();
         out.put("boardSize", Map.of("width", geometry.width(), "height", geometry.height(),
                 "originFile", geometry.originFile(), "originRank", geometry.originRank()));
         out.put("whiteTurn", game.whiteTurn);
+        out.put("castlingRights", Map.of("white", List.of(game.hasCastlingRight(true, true), game.hasCastlingRight(true, false)),
+                "black", List.of(game.hasCastlingRight(false, true), game.hasCastlingRight(false, false))));
         out.put("mode", game.mode);
         out.put("difficulty", game.difficulty);
         out.put("handLimit", game.handLimit);
@@ -57,7 +65,7 @@ final class GameView {
      * Поля карты, используемые интерфейсом.
      */
     static Map<String, Object> cardJson(Card c) {
-        return Map.of("id", c.id(), "type", c.type().toString(), "name", c.name());
+        return Map.of("id", c.id(), "type", c.type().toString(), "name", c.name(), "durationTurns", c.durationTurns(), "freezeTurns", c.freezeTurns());
     }
 
     /**

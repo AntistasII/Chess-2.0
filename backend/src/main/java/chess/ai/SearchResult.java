@@ -1,0 +1,21 @@
+package chess.ai;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/** Оценки всех корневых кандидатов на последней полностью завершённой глубине. */
+public record SearchResult(String actionId, Map<String, Double> scores, int depth, int matePlies) {
+    public SearchResult(String actionId, Map<String, Double> scores, int depth) { this(actionId, scores, depth, 0); }
+    public SearchResult { scores = Map.copyOf(scores); }
+
+    /** Сохраняет близкие по оценке варианты; незавершённый поиск не ограничивает выбор. */
+    public Set<String> competitiveActions() {
+        if (matePlies > 0) return Set.of(actionId);
+        if (scores.isEmpty()) return Set.of();
+        double best = scores.values().stream().mapToDouble(Double::doubleValue).max().orElseThrow();
+        double margin = depth >= 2 ? 100 : 70;
+        return scores.entrySet().stream().filter(e -> e.getValue() >= best - margin)
+                .map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+    }
+}

@@ -1,6 +1,7 @@
 package chess.board;
 
 import chess.pieces.Piece;
+import chess.pieces.PieceFactory;
 
 /** Проверки размеров, вставки линий, переноса координат и независимости копий доски. */
 public final class BoardTest {
@@ -30,10 +31,10 @@ public final class BoardTest {
         rejects(() -> board.set(64, null));
         rejects(() -> board.geometry().index(0, 8));
 
-        Piece pawn = new Piece(1, 'P', true);
+        Piece pawn = PieceFactory.create(1, 'P', true);
         pawn.enableBoost(); pawn.protect(); pawn.freezeUntil(4); pawn.sendToAstralUntil(6);
         board.set(8, pawn);
-        Board.Geometry original = board.geometry();
+        Geometry original = board.geometry();
         Board.Expansion columns = board.addColumns(1);
         check(board.width() == 10 && board.height() == 8, "Добавление с двух боков");
         check(columns.remap(8) == 11 && columns.remap(-1) == -1 && board.get(11) == pawn, "Перенос индексов и фигуры");
@@ -55,7 +56,7 @@ public final class BoardTest {
         check(copy.geometry().originalSquare(1, 0) == 39 && copy.get(39).id() == pawn.id(), "Несимметричное расширение переносит копию");
         rejects(() -> board.expand(-1, 0, 0, 0));
         check(board.width() == 10 && board.height() == 12 && board.get(31) == pawn, "Ошибка расширения не меняет доску");
-        check(Board.Geometry.fileName(25).equals("z") && Board.Geometry.fileName(26).equals("aa"), "Подписи вертикалей за пределами z");
+        check(Geometry.fileName(25).equals("z") && Geometry.fileName(26).equals("aa"), "Подписи вертикалей за пределами z");
         board.clear();
         check(board.size() == 120 && board.get(31) == null, "Очистка сохраняет геометрию");
         System.out.println("Passed " + checks + " board checks.");

@@ -34,7 +34,7 @@ export function useGame() {
             aiInFlight.current = true;
             setBusy(true);
             setError('');
-            requestOpponent({ version: game.version }).then(setGame).catch(e => setError(e.message)).finally(() => {
+            requestOpponent({ version: game.version }, game.opponentRetryLimit).then(setGame).catch(e => setError(e.message)).finally(() => {
                 aiInFlight.current = false;
                 setBusy(false);
             });
@@ -66,6 +66,7 @@ export function useGame() {
     useEffect(() => {
         if (game?.mode === 'network') { setFlipped(game.playerWhite === false); setCovered(false); resetSelection(); }
     }, [game?.mode, game?.playerWhite]);
+    useEffect(() => { resetSelection(); }, [game?.version]);
     async function act(path: CommandPath, body: object) {
         if (!game || busy)
             return;
@@ -74,7 +75,7 @@ export function useGame() {
         setNotice('');
         try {
             const payload = { ...body, version: game.version };
-            const next = await (path === 'ai' ? requestOpponent(payload) : request(path, payload));
+            const next = await (path === 'ai' ? requestOpponent(payload, game.opponentRetryLimit) : request(path, payload));
             resetSelection();
             if (path === 'save') setNotice('Партия сохранена на диске.');
             else {
@@ -162,7 +163,7 @@ export function useGame() {
         if (activeCard) {
             if (!targets.has(s))
                 return;
-            if (activeCard.type === 'SWAP' && firstTarget === null) {
+            if ((activeCard.type === 'SWAP' || activeCard.type === 'SACRIFICE') && firstTarget === null) {
                 setFirstTarget(s);
                 return;
             }

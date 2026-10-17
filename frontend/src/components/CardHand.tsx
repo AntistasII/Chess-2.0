@@ -32,6 +32,7 @@ export function CardHand({ game, covered, canAct, cardId, activeCard, cardAction
                         <p>{descriptions[activeCard.type]}</p>{cardActions.length === 0 ?
                 <small>Сейчас нет допустимого применения.</small> : activeCard.type === 'SCOUT' ?
                 <button className="primary" onClick={() => onScout(activeCard.id)}>Применить
-                                    разведку</button> : <small>{hint}</small>}</div>}
+                                    разведку</button> : cardActions.every(a => a.to < 0) ?
+                <button className="primary" onClick={() => execute(cardActions)}>Применить</button> : <small>{hint}</small>}</div>}
                 </section>;
 }

@@ -1,4 +1,4 @@
-export type CardType = 'PAWN_BOOST' | 'KING_BOOST' | 'REVIVE_PAWN' | 'REVIVE_PIECE' | 'CONVERT' | 'FREEZE' | 'ASTRAL' | 'SHIELD' | 'CLEANSE' | 'SWAP' | 'SCOUT' | 'EXCHANGE';
+export type CardType = 'PAWN_BOOST' | 'KING_BOOST' | 'REVIVE_PAWN' | 'REVIVE_PIECE' | 'CONVERT' | 'FREEZE' | 'ASTRAL' | 'SHIELD' | 'CLEANSE' | 'SWAP' | 'SCOUT' | 'EXCHANGE' | 'UNDO_MOVE' | 'EXPAND_BOTTOM' | 'EXPAND_TOP' | 'EXPAND_LEFT' | 'EXPAND_RIGHT' | 'DESTROY_CARD' | 'SACRIFICE' | 'TRAP' | 'HIDDEN_TRAP' | 'WHITE_HOLE';
 export type Card = {
     id: number;
     type: CardType;
@@ -14,6 +14,7 @@ export type Piece = {
     frozen: boolean;
     astral: boolean;
     astralTurns?: number;
+    frozenTurns?: number;
 };
 export type Action = {
     id: string;
@@ -30,7 +31,19 @@ export type BoardSize = {
     originFile: number;
     originRank: number;
 };
+export type SquareEffect = {
+    square: number;
+    type: 'TRAP' | 'HIDDEN_TRAP' | 'WHITE_HOLE';
+    white: boolean;
+    turns: number;
+    freezeTurns: number;
+};
 export type State = {
+    squareEffects?: SquareEffect[];
+    castlingRights?: { white: [boolean, boolean]; black: [boolean, boolean] };
+    opponentRetryLimit: number;
+    defaultMode: string;
+    newGameDefaults: Record<string, { handLimit: number; difficulty: string }>;
     board: Piece[];
     boardSize: BoardSize;
     whiteTurn: boolean;
