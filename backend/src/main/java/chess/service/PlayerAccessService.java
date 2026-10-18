@@ -18,7 +18,7 @@ import java.util.UUID;
 public final class PlayerAccessService {
     private static final String OWNER_COOKIE = "chess_host";
     private static final String GUEST_COOKIE = "chess_guest";
-    private static final Set<GameOperation> GUEST_OPERATIONS = Set.of(GameOperation.STATE, GameOperation.PLAY, GameOperation.SCOUT, GameOperation.DRAW);
+    private static final Set<GameOperation> GUEST_OPERATIONS = Set.of(GameOperation.STATE, GameOperation.PLAY, GameOperation.SCOUT, GameOperation.DRAW, GameOperation.RESIGN);
     private static final String OWNER_ONLY = "Команда доступна только владельцу сервера";
 
     private final String hostKey;

@@ -44,6 +44,7 @@ public final class HttpRequestReader {
             case "/api/ai" -> GameOperation.AI;
             case "/api/scout" -> GameOperation.SCOUT;
             case "/api/draw" -> GameOperation.DRAW;
+            case "/api/resign" -> GameOperation.RESIGN;
             case "/api/save" -> GameOperation.SAVE;
             case "/api/load" -> GameOperation.LOAD;
             case "/api/export" -> GameOperation.EXPORT;

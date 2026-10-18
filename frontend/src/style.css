@@ -3,3 +3,7 @@
 @import './styles/cards.css';
 @import './styles/dialogs.css';
 @import './styles/responsive.css';
+@import './styles/viewport.css';
+@import './styles/themes.css';
+@import './styles/draw-pile.css';
+@import './styles/new-game.css';

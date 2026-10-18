@@ -10,14 +10,24 @@ public final class OpponentRegistry {
     private final Map<String, Opponent> opponents;
 
     public OpponentRegistry(MoveSelector local, MoveSelector chatGpt) {
-        opponents = Map.of("ai", adapt("ai", local), "chatgpt", adapt("chatgpt", chatGpt),
-                "network", new NetworkOpponent(), "human", new HumanOpponent());
+        opponents = new java.util.HashMap<>(Map.of("ai", adapt("ai", local), "chatgpt", adapt("chatgpt", chatGpt),
+                "network", new NetworkOpponent(), "human", new HumanOpponent()));
     }
 
     public Opponent forMode(String mode) {
         Opponent opponent = opponents.get(mode);
         if (opponent == null) throw new IllegalArgumentException("Неизвестный соперник: " + mode);
         return opponent;
+    }
+
+    public boolean chatGptConfigured() {
+        return opponents.get("chatgpt") instanceof ChatGptOpponent chat && chat.configured();
+    }
+
+    public void configureChatGptKey(String apiKey) {
+        if (!(opponents.get("chatgpt") instanceof ChatGptOpponent chat))
+            throw new IllegalArgumentException("Настройка API-ключа для этого соперника недоступна");
+        opponents.put("chatgpt", chat.withApiKey(apiKey));
     }
 
     /** Сохраняет возможность подключать простые тестовые стратегии через MoveSelector. */

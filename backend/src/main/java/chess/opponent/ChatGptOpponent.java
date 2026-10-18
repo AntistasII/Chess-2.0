@@ -13,7 +13,7 @@ import java.net.http.*;
 import java.time.Duration;
 import java.util.*;
 
-/** Соперник через Responses API. Ключ читается сервером из конфигурации. */
+/** Соперник через Responses API. Ключ берётся из конфигурации или локального окна новой партии. */
 public final class ChatGptOpponent extends Opponent {
     private final String apiKey;
     private final String model;
@@ -60,6 +60,15 @@ public final class ChatGptOpponent extends Opponent {
         opponent.memory = new OpponentMemory(Path.of("data/chatgpt-memory.json"));
         return opponent;
     }
+
+    /** Новый ключ хранится только в памяти; настройки транспорта и память партии сохраняются. */
+    public ChatGptOpponent withApiKey(String key) {
+        var replacement = new ChatGptOpponent(key, model, prompt, transport, advisor);
+        replacement.memory = memory;
+        return replacement;
+    }
+
+    public boolean configured() { return apiKey != null && !apiKey.isBlank(); }
 
     static String loadPrompt(Path path) throws IOException {
         if (!Files.isRegularFile(path))
@@ -123,7 +132,7 @@ public final class ChatGptOpponent extends Opponent {
         try {
             Reply response = transport.send(apiKey, body);
             if (response.status() != 200) throw new Failure(switch (response.status()) {
-                case 401 -> "OpenAI: API-ключ недействителен (HTTP 401). Замените openai.api-key в application.yml и перезапустите сервер.";
+                case 401 -> "OpenAI отклонил API-ключ (HTTP 401). Укажите действующий ключ в окне новой партии или в openai.api-key в application.yml. Предыдущие автоматические действия могли выполняться без запроса к OpenAI.";
                 case 403 -> "OpenAI запретил доступ (HTTP 403). Проверьте разрешения API-ключа и доступ к модели.";
                 case 429 -> "OpenAI: исчерпан лимит или баланс API. Проверьте аккаунт и повторите позже.";
                 case 400, 404 -> "OpenAI не принял запрос. Проверьте openai.model в application.yml и доступность модели.";

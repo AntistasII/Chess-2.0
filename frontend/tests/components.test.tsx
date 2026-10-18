@@ -77,10 +77,16 @@ assert.equal(squareName(119, 10), 'j12');
 const rules = renderToStaticMarkup(<GameRules/>);
 assert.match(rules, /Возрождение фигуры/);
 assert.match(rules, /Обмен планами/);
-const chatForm = renderToStaticMarkup(<NewGameForm mode="chatgpt" limit={3} difficulty="normal"
-  busy={false} setMode={() => {}} setLimit={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
-assert.match(chatForm, /С ChatGPT/);
-assert.match(chatForm, /application.yml/);
+const chatForm = renderToStaticMarkup(<NewGameForm mode="chatgpt" difficulty="normal"
+  busy={false} setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
+assert.match(chatForm, /ChatGPT/);
+assert.match(chatForm, /API-ключ OpenAI/);
+assert.doesNotMatch(chatForm, /По сети|Максимум карт|type="number"/);
+assert.match(chatForm, /type="password"/);
+const cloudForm = renderToStaticMarkup(<NewGameForm mode="network" difficulty="normal" networkOnly busy={false}
+  setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
+assert.match(cloudForm, /входит по своему коду/);
+assert.doesNotMatch(cloudForm, /ChatGPT|Локальный ИИ|type="password"|type="number"/);
 assert.doesNotMatch(chatForm, /<select/);
 assert.equal(gameStatus({...state, mode: 'chatgpt', whiteTurn: false}, true), 'ChatGPT обдумывает ход…');
 console.log('UI checks passed: dynamic hands, concealed cards, variable board sizes, board orientation and modifier badges.');
@@ -151,3 +157,41 @@ async function retryChecks() {
   console.log('Retry checks passed: recovery, ten retries, stable version, non-JSON 502 and no retry on other errors.');
 }
 void retryChecks().catch(error => { console.error(error); process.exitCode = 1; });
+
+async function resignationChecks() {
+  const { ApiError, requestResignation } = await import('../src/game/api');
+  const old = {...state, mode: 'network', playerWhite: true, gameId: 'party-a', version: 5};
+  const latest = {...old, version: 6, whiteTurn: false};
+  const finished = {...latest, version: 7, result: 'whiteResigned'};
+  const bodies: object[] = [];
+  assert.equal(await requestResignation(old, async body => {
+    bodies.push(body);
+    if (bodies.length === 1) throw new ApiError('stale', 409);
+    return finished;
+  }, async () => latest), finished);
+  assert.deepEqual(bodies, [{version: 5, gameId: 'party-a'}, {version: 6, gameId: 'party-a'}]);
+  for (const changed of [
+    {...latest, gameId: 'party-b'},
+    {...latest, playerWhite: false},
+    {...latest, mode: 'ai'},
+  ]) {
+    let sends = 0;
+    await assert.rejects(requestResignation(old, async () => {
+      sends++; throw new ApiError('stale', 409);
+    }, async () => changed), /Сдача отменена/);
+    assert.equal(sends, 1, 'Never resign a different party or role');
+  }
+  let sends = 0;
+  assert.equal(await requestResignation(old, async () => {
+    sends++; throw new ApiError('stale', 409);
+  }, async () => finished), finished);
+  assert.equal(sends, 1, 'An already completed game needs no second surrender');
+  await assert.rejects(requestResignation({...old, gameId: undefined}, async () => {
+    throw new Error('Must not send without identity');
+  }), /идентификатора партии/);
+  await assert.rejects(requestResignation({...old, mode: 'human'}, async () => {
+    throw new ApiError('stale', 409);
+  }, async () => ({...latest, mode: 'human'})), /Сдача отменена/);
+  console.log('Resignation checks passed: same-party retry, role/game isolation, completed game, missing identity and hot-seat turn change.');
+}
+void resignationChecks().catch(error => { console.error(error); process.exitCode = 1; });

@@ -4,7 +4,7 @@ export function PieceIcon({ type, white = true, ghost = false }: {
     ghost?: boolean;
 }) {
     const fill = white ? '#fffdf5' : '#27332e';
-    return <svg className={`piece ${ghost ? 'ghost' : ''}`} viewBox="0 0 64 64" aria-hidden="true" fill={fill} stroke="#27332e" strokeWidth="2.1" strokeLinejoin="round" strokeLinecap="round">
+    return <svg className={`piece ${ghost ? 'ghost' : ''} ${white ? 'white-piece' : 'black-piece'}`} viewBox="0 0 64 64" aria-hidden="true" fill={fill} stroke="#27332e" strokeWidth="2.1" strokeLinejoin="round" strokeLinecap="round">
         {type === 'P' && <>
             <circle cx="32" cy="18" r="8"/>
             <path d="M25 26h14l-3 8c0 8 8 10 8 17H20c0-7 8-9 8-17z"/>

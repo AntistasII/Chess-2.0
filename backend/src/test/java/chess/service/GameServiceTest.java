@@ -67,4 +67,74 @@ class GameServiceTest {
         assertFalse(guest.cookies().get(0).secure());
         assertEquals(false, ((Map<?, ?>)guest.body()).get("playerWhite"));
     }
+    @Test void guestCanResignOutOfTurnButCannotChooseWhichSideResigns() throws Exception {
+        var session = chess.game.TestSessions.create(g -> "draw");
+        session.newGame("network", 3, "normal");
+        var service = new GameService(session, "test-owner-code-123456", "test-friend-code-654321");
+        var owner = login(service, "test-owner-code-123456");
+        var friend = login(service, "test-friend-code-654321");
+        var version = state(service, friend).get("version");
+        var response = service.execute(friend, command(GameOperation.RESIGN,
+                Map.of("version", version, "gameId", state(service, friend).get("gameId"), "white", true)));
+        assertEquals("blackResigned", ((Map<?, ?>) response.body()).get("result"));
+        assertEquals("blackResigned", state(service, owner).get("result"));
+        assertEquals(false, ((Map<?, ?>) response.body()).get("playerWhite"));
+        assertEquals(java.util.List.of(), state(service, friend).get("actions"));
+    }
+
+    @Test void ownerResignsOwnSideDuringGuestTurnAndRequiresAuthentication() throws Exception {
+        var session = chess.game.TestSessions.create(g -> "draw");
+        session.newGame("network", 3, "normal");
+        var service = new GameService(session, "test-owner-code-123456", "test-friend-code-654321");
+        var owner = login(service, "test-owner-code-123456");
+        var initial = state(service, owner);
+        var actions = (java.util.List<?>) initial.get("actions");
+        var id = ((Map<?, ?>) actions.getFirst()).get("id");
+        service.execute(owner, command(GameOperation.PLAY, Map.of("version", initial.get("version"), "actionId", id)));
+        var version = state(service, owner).get("version");
+        assertEquals(false, state(service, owner).get("whiteTurn"));
+        assertThrows(ServiceException.class, () -> service.execute(new ClientIdentity(false, null),
+                command(GameOperation.RESIGN, Map.of("version", version, "gameId", state(service, owner).get("gameId")))));
+        assertEquals("", state(service, owner).get("result"));
+        service.execute(owner, command(GameOperation.RESIGN, Map.of("version", version, "gameId", state(service, owner).get("gameId"))));
+        assertEquals("whiteResigned", state(service, owner).get("result"));
+    }
+
+    @Test void restartedServerRejectsResignationEvenWhenVersionIsTheSame() throws Exception {
+        var client = new ClientIdentity(true, null);
+        var before = new GameService(chess.game.TestSessions.create(g -> "draw"), "", "");
+        var old = state(before, client);
+        var restarted = new GameService(chess.game.TestSessions.create(g -> "draw"), "", "");
+        var current = state(restarted, client);
+        assertEquals(old.get("version"), current.get("version"));
+        assertNotEquals(old.get("gameId"), current.get("gameId"));
+        assertThrows(chess.game.GameSession.StalePositionException.class, () -> restarted.execute(client,
+                command(GameOperation.RESIGN, Map.of("version", old.get("version"), "gameId", old.get("gameId")))));
+        assertEquals(current, state(restarted, client));
+        restarted.execute(client, command(GameOperation.RESIGN,
+                Map.of("version", current.get("version"), "gameId", current.get("gameId"))));
+        assertEquals("whiteResigned", state(restarted, client).get("result"));
+    }
+
+    @Test void cloudOnlyAllowsTwoPlayerGamesIncludingImportedSaves() throws Exception {
+        var session = chess.game.TestSessions.create(g -> "draw");
+        session.newGame("network", 3, "normal");
+        var service = new GameService(session, "test-owner-code-123456", "test-friend-code-654321");
+        var owner = login(service, "test-owner-code-123456");
+        assertEquals(true, state(service, owner).get("networkOnly"));
+        var original = state(service, owner);
+        for (String mode : java.util.List.of("ai", "chatgpt", "human")) {
+            assertThrows(IllegalArgumentException.class, () -> service.execute(owner,
+                    command(GameOperation.NEW_GAME, Map.of("mode", mode))));
+            assertEquals(original, state(service, owner));
+        }
+        var save = new java.util.HashMap<>(session.exportGame(((Number) original.get("version")).longValue()));
+        save.put("settings", java.util.List.of("ai", 3, "normal"));
+        assertThrows(IllegalArgumentException.class, () -> service.execute(owner,
+                command(GameOperation.IMPORT, Map.of("version", original.get("version"), "save", save))));
+        assertEquals(original, state(service, owner));
+        service.execute(owner, command(GameOperation.NEW_GAME, Map.of()));
+        assertEquals("network", state(service, owner).get("mode"));
+    }
+
 }

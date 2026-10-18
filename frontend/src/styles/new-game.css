@@ -1,0 +1,26 @@
+.new-game-eyebrow { font-size: 10px; letter-spacing: 1.5px; font-weight: 600; color: var(--muted-ink); }
+.new-game-form h2 { margin: 7px 0 20px; font-size: 26px; letter-spacing: -.7px; }
+.mode-options { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.new-game-form .mode-option { display: grid; grid-template-columns: 36px minmax(0,1fr) 17px; align-items: center; gap: 12px; padding: 12px; margin: 0; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); cursor: pointer; }
+.mode-option.is-active { background: var(--surface-selected); border-color: var(--green); }
+.mode-options:disabled .mode-option { cursor: default; opacity: .6; }
+.mode-symbol { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background: var(--surface-soft); color: var(--green); font-size: 27px; line-height: 1; }
+.mode-copy { display: flex; flex-direction: column; gap: 3px; }
+.mode-copy strong { font-size: 14px; font-weight: 600; }
+.mode-copy > span { font-size: 11px; color: var(--muted-ink); line-height: 1.35; }
+.new-game-form .mode-option input { width: 17px; height: 17px; padding: 0; margin: 0; accent-color: var(--green); }
+.new-game-form .new-game-field { margin: 16px 0 9px; color: var(--ink); gap: 7px; font-size: 12px; font-weight: 500; }
+.new-game-field input, .new-game-field select { width: 100%; min-width: 0; font-weight: 400; font-size: 13px; }
+.new-game-form .new-game-note { color: var(--muted-ink); font-size: 11px; line-height: 1.5; margin: 12px 0; }
+.new-game-start { display: flex; width: 100%; justify-content: space-between; align-items: center; margin-top: 16px; padding: 12px 15px; border-radius: 10px; }
+.new-game-error { background: var(--danger-surface); color: var(--danger); border-radius: 8px; padding: 10px; font-size: 12px; line-height: 1.4; }
+.network-game-note { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.network-game-note .mode-symbol { flex-shrink: 0; background: var(--surface); }
+.network-game-note strong { font-size: 14px; }
+.network-game-note p { font-size: 12px; color: var(--muted-ink); line-height: 1.5; margin: 5px 0 0; }
+@media(max-width:730px) {
+  .new-game-form h2 { margin-bottom: 15px; font-size: 23px; }
+  .new-game-form .mode-option { padding: 10px; gap: 10px; }
+  .new-game-field input, .new-game-field select { font-size: 16px; }
+}

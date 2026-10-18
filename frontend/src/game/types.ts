@@ -43,6 +43,9 @@ export type State = {
     castlingRights?: { white: [boolean, boolean]; black: [boolean, boolean] };
     opponentRetryLimit: number;
     defaultMode: string;
+    networkOnly?: boolean;
+    openAiConfigured?: boolean;
+    apiKeyInputSupported?: boolean;
     newGameDefaults: Record<string, { handLimit: number; difficulty: string }>;
     board: Piece[];
     boardSize: BoardSize;
@@ -52,6 +55,7 @@ export type State = {
     difficulty: string;
     handLimit: number;
     version: number;
+    gameId?: string;
     ply: number;
     hand: Card[];
     handWhite: boolean;

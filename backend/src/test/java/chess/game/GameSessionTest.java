@@ -40,7 +40,7 @@ public final class GameSessionTest {
         GameSession session = chess.game.TestSessions.create(chess.game.TestSessions.ai());
         Map<String, Object> initial = session.state();
         check(initial.keySet().equals(Set.of("board", "boardSize", "squareEffects", "castlingRights", "whiteTurn", "mode", "difficulty", "handLimit",
-                "version", "ply", "hand", "enemyCards", "handWhite", "deckCount", "discardCount", "check",
+                "version", "gameId", "ply", "hand", "enemyCards", "handWhite", "deckCount", "discardCount", "check",
                 "result", "canClaimDraw", "actions", "captured", "history", "scouting", "defaultMode", "newGameDefaults")), "Public API includes configured game defaults");
         check(((List<?>) initial.get("board")).size() == 32, "Initial board projection");
         try {

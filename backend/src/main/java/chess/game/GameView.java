@@ -45,6 +45,7 @@ final class GameView {
         out.put("difficulty", game.difficulty);
         out.put("handLimit", game.handLimit);
         out.put("version", game.version);
+        out.put("gameId", game.gameId);
         out.put("ply", game.ply);
         out.put("hand", game.hand(visible).stream().map(GameView::cardJson).toList());
         out.put("enemyCards", game.hand(!visible).size());

@@ -1,0 +1,49 @@
+.draw-pile {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+}
+.pile-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.pile-heading h2 { font-size: 12px; font-weight: 600; letter-spacing: 0; }
+.pile-discard { display: inline-flex; gap: 6px; color: var(--muted-ink); font-size: 11px; white-space: nowrap; }
+.pile-discard b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pile-content { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.pile-stock { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pile-icon { display: grid; place-items: center; width: 36px; height: 42px; flex-shrink: 0; border-radius: 9px; background: var(--surface-soft); color: var(--green); }
+.pile-icon svg { width: 23px; height: 23px; }
+.pile-counter { display: flex; flex-direction: column; gap: 1px; }
+.pile-counter strong { font-size: 27px; font-weight: 600; letter-spacing: -.8px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pile-counter > span { font-size: 10px; color: var(--muted-ink); white-space: nowrap; }
+.pile-draw { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 12px; border-radius: 9px; min-height: 45px; min-width: 140px; }
+.pile-button-label { display: flex; flex-direction: column; gap: 1px; text-align: left; }
+.pile-button-label > span:first-child { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pile-button-label > span:last-child { font-size: 10px; font-weight: 400; opacity: .8; }
+.pile-plus { font-size: 20px; font-weight: 400; line-height: 1; }
+.pile-notice { color: var(--muted-ink); font-size: 11px; line-height: 1.35; margin: 8px 0 0; }
+@media(max-width:730px) {
+  .draw-pile { width: 100%; padding: 9px 12px; border-radius: 11px; }
+  .pile-heading { margin-bottom: 7px; }
+  .pile-heading h2 { font-size: 11px; }
+  .pile-content { gap: 10px; }
+  .pile-counter strong { font-size: 25px; }
+  .pile-draw { min-width: 140px; min-height: 43px; padding: 7px 11px; }
+  .pile-notice { margin-top: 5px; font-size: 10px; }
+}
+@media(max-height:500px) and (min-width:600px) {
+  .draw-pile { padding: 6px 10px; }
+  .pile-heading { margin-bottom: 4px; }
+  .pile-icon { width: 28px; height: 32px; }
+  .pile-icon svg { width: 20px; height: 20px; }
+  .pile-counter strong { font-size: 22px; }
+  .pile-draw { min-height: 36px; padding: 4px 10px; }
+  .pile-notice { margin-top: 3px; font-size: 10px; }
+}

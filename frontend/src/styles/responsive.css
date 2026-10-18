@@ -14,19 +14,6 @@
     gap: 20px;
   }
 
-  .deck-section {
-    padding: 20px 16px;
-  }
-
-  .deck-row {
-    gap: 14px;
-  }
-
-  .deck-art {
-    width: 62px;
-    height: 84px;
-  }
-
   .brand {
     font-size: 20px;
   }
@@ -110,46 +97,6 @@
 
   .sidebar {
     padding-top: 0;
-  }
-
-  .deck-section {
-    padding: 16px;
-  }
-
-  .deck-row {
-    margin-top: 12px;
-    gap: 22px;
-  }
-
-  .deck-art {
-    height: 65px;
-    width: 49px;
-  }
-
-  .deck-detail {
-    display: grid;
-    grid-template-columns: 1fr 140px;
-    gap: 0 12px;
-  }
-
-  .deck-detail>strong {
-    font-size: 23px;
-  }
-
-  .deck-detail>small {
-    grid-column: 1;
-    grid-row: 2;
-    margin: 3px 0;
-  }
-
-  .deck-detail .primary {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .under-button {
-    grid-column: 2;
-    grid-row: 2;
   }
 
   .hand-section {

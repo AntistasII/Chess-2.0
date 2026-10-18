@@ -55,6 +55,8 @@ export const resultText: Record<string, string> = {
     stalemate: 'Ничья — нет допустимых действий',
     repetition: 'Ничья — повторение позиции',
     seventyFiveMoves: 'Ничья — 75 ходов',
+    whiteResigned: 'Белые сдались — победили чёрные',
+    blackResigned: 'Чёрные сдались — победили белые',
     claimedDraw: 'Ничья по заявлению'
 };
 

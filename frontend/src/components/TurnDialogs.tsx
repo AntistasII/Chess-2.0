@@ -22,7 +22,7 @@ export function TurnDialogs({ game, covered, busy, choices, execute, onReady, on
                 </button>
             </div>
         </div>}
-        {game.scouting.length > 0 && <div className="overlay">
+        {!game.result && game.scouting.length > 0 && <div className="overlay">
             <div className="dialog"><h2>Разведка</h2><p>Верхние карты колоды. Первая будет взята следующей.</p>
                 <div className="scout-cards">{game.scouting.map((card, i) => <div className="mini-card" key={card.id}>
                     <small>{i + 1}-я карта</small><Icon type={card.type}/><strong>{card.name}</strong></div>)}</div>

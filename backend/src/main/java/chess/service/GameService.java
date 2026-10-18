@@ -14,13 +14,14 @@ import java.util.Set;
  */
 public final class GameService {
     private static final Set<GameOperation> COMMANDS = Set.of(GameOperation.PLAY, GameOperation.AI,
-            GameOperation.SCOUT, GameOperation.DRAW, GameOperation.SAVE, GameOperation.LOAD,
+            GameOperation.SCOUT, GameOperation.DRAW, GameOperation.RESIGN, GameOperation.SAVE, GameOperation.LOAD,
             GameOperation.EXPORT, GameOperation.IMPORT);
     private static final Set<GameOperation> PLAYER_COMMANDS = Set.of(GameOperation.PLAY, GameOperation.SCOUT, GameOperation.DRAW);
     private static final Map<String, Object> OK = Map.of("ok", true);
     private final GameSession session;
     private final PlayerAccessService access;
     private final OpenAiProperties openAi;
+    private final boolean networkOnly;
 
     public GameService(GameSession session, String hostKey, String guestKey) {
         this(session, hostKey, guestKey, null);
@@ -29,6 +30,7 @@ public final class GameService {
     public GameService(GameSession session, String hostKey, String guestKey, OpenAiProperties openAi) {
         this.session = session;
         this.openAi = openAi;
+        networkOnly = !hostKey.isBlank();
         access = new PlayerAccessService(hostKey, guestKey);
     }
 
@@ -53,7 +55,11 @@ public final class GameService {
         if (!request.isPost()) throw notFound();
 
         if (request.operation() == GameOperation.NEW_GAME) {
-            session.newGame(request.text("mode", null), request.optionalInteger("handLimit"), request.text("difficulty", null));
+            String mode = request.text("mode", networkOnly ? "network" : null);
+            if (networkOnly && !"network".equals(mode))
+                throw new IllegalArgumentException("На этом сервере играют вдвоём со входом по кодам");
+            session.newGame(mode, request.optionalInteger("handLimit"), request.text("difficulty", null),
+                    networkOnly ? null : request.text("apiKey", null));
             return new ApiResponse(view(owner), grant.cookies());
         }
         if (request.operation() == GameOperation.RESET) {
@@ -68,6 +74,7 @@ public final class GameService {
         var operation = request.operation();
         if (!COMMANDS.contains(operation)) throw notFound();
         long version = request.version();
+        if (operation == GameOperation.RESIGN) session.requireGame(request.text("gameId", null));
         // Устаревшая команда отклоняется до чтения её аргументов, как и раньше.
         session.requireVersion(version);
         if (session.isNetwork() && PLAYER_COMMANDS.contains(operation)) session.requirePlayerTurn(grant.owner());
@@ -75,12 +82,13 @@ public final class GameService {
             return new ApiResponse(session.exportGame(version), grant.cookies(), true);
 
         Map<String, Object> state = switch (operation) {
-            case IMPORT -> session.importGame(version, request.save());
+            case IMPORT -> session.importGame(version, request.save(), networkOnly);
             case SAVE -> session.save(version);
-            case LOAD -> session.load(version);
+            case LOAD -> session.load(version, networkOnly);
             case AI -> session.runAi(version);
             case SCOUT -> session.scout(version, request.cardId());
             case DRAW -> session.claimDraw(version);
+            case RESIGN -> session.resign(version, grant.owner());
             case PLAY -> session.play(version, request.text("actionId", null));
             default -> throw notFound();
         };
@@ -94,6 +102,9 @@ public final class GameService {
 
     private Map<String, Object> withRequestSettings(Map<String, Object> state) {
         // Клиент получает только политику повторов, без ключа и остальных секретов.
+        state.put("networkOnly", networkOnly);
+        state.put("openAiConfigured", !networkOnly && session.chatGptConfigured());
+        state.put("apiKeyInputSupported", !networkOnly);
         state.put("opponentRetryLimit", openAi != null && "chatgpt".equals(state.get("mode")) ? openAi.maxRetries() : 0);
         return state;
     }

@@ -399,8 +399,15 @@ public final class Game {
     }
 
     /**
-     * Фиксирует заявленную ничью и обновляет версию состояния.
+     * Фиксирует сдачу игрока, не перемещая фигуры и не расходуя ход.
      */
+    public void resign(boolean white) {
+        if (!result.isEmpty()) throw new IllegalArgumentException("Партия уже завершена");
+        result = white ? "whiteResigned" : "blackResigned";
+        version++;
+    }
+
+    /** Фиксирует ничью по заявлению текущего игрока. */
     public void claimDraw() {
         if (!canClaimDraw()) throw new IllegalArgumentException("Ничья пока недоступна");
         result = "claimedDraw";

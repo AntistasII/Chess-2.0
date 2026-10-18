@@ -51,10 +51,22 @@ public final class GameSession {
      * Создаёт новую партию с возрастающей версией; старые команды становятся недействительны.
      */
     public synchronized Map<String, Object> newGame(String mode, Integer handLimit, String difficulty) {
+        return newGame(mode, handLimit, difficulty, null);
+    }
+
+    public synchronized boolean chatGptConfigured() { return opponents.chatGptConfigured(); }
+
+    public synchronized Map<String, Object> newGame(String mode, Integer handLimit, String difficulty, String apiKey) {
         if (mode == null) mode = settings.defaultMode();
         var defaults = settings.forMode(mode);
         Game next = new Game(mode, handLimit == null ? defaults.handLimit() : handLimit,
                 difficulty == null ? defaults.difficulty() : difficulty, settings.backRank());
+        if (mode.equals("chatgpt") && apiKey != null && !apiKey.isBlank()) {
+            String key = apiKey.trim();
+            if (key.length() > 1024 || key.chars().anyMatch(Character::isWhitespace))
+                throw new IllegalArgumentException("API-ключ должен быть одной строкой без пробелов");
+            opponents.configureChatGptKey(key);
+        }
         next.version = game.version + 1;
         game = next;
         return state();
@@ -86,6 +98,10 @@ public final class GameSession {
     }
 
     public synchronized Map<String, Object> importGame(long version, Map<String, Object> data) {
+        return importGame(version, data, false);
+    }
+
+    public synchronized Map<String, Object> importGame(long version, Map<String, Object> data, boolean networkOnly) {
         requireVersion(version);
         Game restored;
         try {
@@ -93,6 +109,7 @@ public final class GameSession {
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Файл сохранения повреждён или несовместим.");
         }
+        requireAllowedMode(restored, networkOnly);
         restored.version = game.version + 1;
         game = restored;
         return state();
@@ -102,11 +119,21 @@ public final class GameSession {
      * Подменяет партию только после полного чтения снимка; старые команды отклоняются.
      */
     public synchronized Map<String, Object> load(long version) throws java.io.IOException {
+        return load(version, false);
+    }
+
+    public synchronized Map<String, Object> load(long version, boolean networkOnly) throws java.io.IOException {
         requireVersion(version);
         Game restored = GameSave.read(java.nio.file.Path.of("data/saved-game.json"));
+        requireAllowedMode(restored, networkOnly);
         restored.version = game.version + 1;
         game = restored;
         return state();
+    }
+
+    private static void requireAllowedMode(Game restored, boolean networkOnly) {
+        if (networkOnly && !restored.mode.equals("network"))
+            throw new IllegalArgumentException("На этом сервере доступны только партии на двух игроков со входом по кодам");
     }
 
     /**
@@ -136,6 +163,14 @@ public final class GameSession {
         requireVersion(version);
         requireHumanTurn();
         game.claimDraw();
+        return state();
+    }
+
+    /** Сдаться можно и во время чужого хода; сетевую сторону определяет авторизация. */
+    public synchronized Map<String, Object> resign(long version, boolean networkWhite) {
+        requireVersion(version);
+        boolean white = isNetwork() ? networkWhite : game.mode.equals("human") ? game.whiteTurn : true;
+        game.resign(white);
         return state();
     }
 
@@ -183,9 +218,12 @@ public final class GameSession {
         }
     }
 
-    /**
-     * Отклоняет повторные команды и команды от устаревшего состояния.
-     */
+    /** Версия может совпасть после перезапуска сервера, поэтому проверяем и саму партию. */
+    public synchronized void requireGame(String gameId) {
+        if (!game.gameId.equals(gameId)) throw new StalePositionException();
+    }
+
+    /** Отклоняет повторные команды и команды от устаревшего состояния. */
     public synchronized void requireVersion(long version) {
         if (version != game.version) throw new StalePositionException();
     }

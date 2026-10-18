@@ -25,7 +25,7 @@ export function ChessBoard({ board, effects = [], size = standardBoard, check, f
     // Точное сравнение подписей отличает, например, a1 от a10 на расширенной доске.
     const lastMove = lastAction.match(/([a-z]+\d+)\s→\s([a-z]+\d+)/);
     return <div className={`board ${check ? 'in-check' : ''}`} role="group"
-        style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, aspectRatio: `${width} / ${height}` }}
+        style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, aspectRatio: `${width} / ${height}`, width: `min(100cqw, ${100 * width / height}cqh)` }}
         aria-label={`Доска ${width} на ${height}, ${flipped ? 'чёрные' : 'белые'} снизу`}>
         {boardOrder(size, flipped).map(s => {
             const rank = Math.floor(s / width), file = s % width;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ApiError, request, requestOpponent, type CommandPath } from '../game/api';
+import { ApiError, request, requestOpponent, requestResignation, type CommandPath } from '../game/api';
 import { gameStatus, selectionHint } from '../game/catalog';
 import type { Action, Card, State } from '../game/types';
 export function useGame() {
@@ -14,6 +14,7 @@ export function useGame() {
     const [covered, setCovered] = useState(false);
     const [flipped, setFlipped] = useState(false);
     const aiInFlight = useRef(false);
+    const commandInFlight = useRef(false);
     const resetSelection = () => {
         setSelected(null);
         setCardId(null);
@@ -31,6 +32,7 @@ export function useGame() {
         if (!game || (game.mode === 'human' || game.mode === 'network') || game.whiteTurn || game.result || aiInFlight.current)
             return;
         const timer = setTimeout(() => {
+            if (commandInFlight.current) return;
             aiInFlight.current = true;
             setBusy(true);
             setError('');
@@ -50,7 +52,7 @@ export function useGame() {
             try {
                 const next = await request('state');
                 if (!cancelled) {
-                    setGame(previous => previous?.version === next.version && previous.mode === next.mode
+                    setGame(previous => previous?.gameId === next.gameId && previous?.version === next.version && previous.mode === next.mode
                         && previous.playerWhite === next.playerWhite ? previous : next);
                     setError('');
                 }
@@ -68,14 +70,19 @@ export function useGame() {
     }, [game?.mode, game?.playerWhite]);
     useEffect(() => { resetSelection(); }, [game?.version]);
     async function act(path: CommandPath, body: object) {
-        if (!game || busy)
-            return;
+        if (!game || busy || commandInFlight.current)
+            return false;
+        if (path === 'new' && 'apiKey' in body && game.apiKeyInputSupported !== true) {
+            setError('Старая версия сервера не принимает API-ключ из формы. Пересоберите и перезапустите Server, затем обновите страницу.');
+            return false;
+        }
+        commandInFlight.current = true;
         setBusy(true);
         setError('');
         setNotice('');
         try {
             const payload = { ...body, version: game.version };
-            const next = await (path === 'ai' ? requestOpponent(payload, game.opponentRetryLimit) : request(path, payload));
+            const next = await (path === 'resign' ? requestResignation(game) : path === 'ai' ? requestOpponent(payload, game.opponentRetryLimit) : request(path, payload));
             resetSelection();
             if (path === 'save') setNotice('Партия сохранена на диске.');
             else {
@@ -88,9 +95,12 @@ export function useGame() {
             }
             if (next.mode === 'human' && next.whiteTurn !== game.whiteTurn && !next.result)
                 setCovered(true);
+            return true;
         }
         catch (e) {
             setError(e instanceof Error ? e.message : 'Ошибка соединения');
+            // Не подменяем показанную партию другой после неудачной сдачи.
+            if (path === 'resign') return false;
             try {
                 const latest = await request('state');
                 if (latest.version !== game.version) setGame(latest);
@@ -99,6 +109,7 @@ export function useGame() {
             }
         }
         finally {
+            commandInFlight.current = false;
             setBusy(false);
         }
     }
@@ -185,7 +196,7 @@ export function useGame() {
         setChoices([]);
         setCardId(cardId === card.id ? null : card.id);
     }
-    const hint = game?.mode === 'network' && game.playerWhite !== game.whiteTurn ? 'Ожидаем ход соперника…' : selectionHint(activeCard, firstTarget, selected);
+    const hint = game?.result ? 'Партия завершена.' : game?.mode === 'network' && game.playerWhite !== game.whiteTurn ? 'Ожидаем ход соперника…' : selectionHint(activeCard, firstTarget, selected);
     return {
         game, error, notice, busy, covered, setCovered, flipped, setFlipped,
         selected, cardId, firstTarget, choices, setChoices, activeCard,

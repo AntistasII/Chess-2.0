@@ -1,0 +1,156 @@
+/* Общая минималистичная компоновка; темы меняют палитру всей игры. */
+:root {
+  color-scheme: light;
+  --page: #f5f7f2;
+  --surface: #fffefb;
+  --surface-soft: #eaf0e5;
+  --surface-selected: #e5efde;
+  --ink: #233b32;
+  --muted-ink: #647365;
+  --subtle-ink: #71806e;
+  --line: #d8e2d4;
+  --green: #346e53;
+  --button-ink: #fff;
+  --button-hover: #2b5d46;
+  --sage: #91a98a;
+  --cream: #edf0df;
+  --board-label-light: #4a6249;
+  --board-label-dark: #f0f4e9;
+  --last-dark: #b0bd81;
+  --last-light: #dfe5b1;
+  --chosen-square: #bdd0a1;
+  --move-dot: #193f3260;
+  --capture-ring: #193f3280;
+  --danger: #a84d39;
+  --danger-surface: #fff0eb;
+  --spell: #3377a0;
+  --frost: #3e7f9f;
+  --astral: #8161a0;
+  --overlay: #19312666;
+  --shadow: #17342718;
+  --trap: #b197d2;
+  --trap-edge: #704397;
+  --trap-ink: #45245f;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #141416;
+  --surface: #202023;
+  --surface-soft: #2b2b2f;
+  --surface-selected: #37373d;
+  --ink: #f0f0f2;
+  --muted-ink: #b9b9c1;
+  --subtle-ink: #a5a5af;
+  --line: #414147;
+  --green: #d4d4dc;
+  --button-ink: #1c1c20;
+  --button-hover: #ededf1;
+  --sage: #515157;
+  --cream: #aaaab0;
+  --board-label-light: #29292e;
+  --board-label-dark: #eeeeef;
+  --last-dark: #7b7b89;
+  --last-light: #c1c1cf;
+  --chosen-square: #b0b0c5;
+  --move-dot: #16161f80;
+  --capture-ring: #f0f0f5bb;
+  --danger: #f0a28f;
+  --danger-surface: #422b27;
+  --spell: #90c5e4;
+  --frost: #9bd1eb;
+  --astral: #c8ace5;
+  --overlay: #050507c4;
+  --shadow: #0005;
+  --trap: #9d83bb;
+  --trap-edge: #dfc1ff;
+  --trap-ink: #241135;
+}
+:root { color: var(--ink); background: var(--page); }
+body { background: var(--page); }
+button, input, select { background: var(--surface); color: var(--ink); }
+button:hover:not(:disabled) { border-color: var(--green); }
+small, .small.muted, .muted, .brand-light, .text-button, .network-seat, .loading p, .card p, .card-footer,
+.card.unavailable:not(.selected):not(.exchange-target), .empty-hand, .empty-hand strong,
+.history-number, .sidebar-footer, .hint, .dialog > p, .dialog label, .close { color: var(--muted-ink); }
+.topbar { border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.brand { font-size: 21px; letter-spacing: -.6px; }
+.brand-mark { font-size: 31px; }
+.menu-toggle, .theme-switcher { background: var(--surface); }
+.menu-toggle { border-radius: 10px; }
+.theme-switcher { display: flex; align-items: center; flex-shrink: 0; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 11px; }
+.theme-switcher button { display: flex; align-items: center; justify-content: center; gap: 6px; background: transparent; border: 0; padding: 6px 9px; border-radius: 7px; color: var(--muted-ink); font-size: 12px; min-height: 30px; }
+.theme-switcher button[aria-pressed="true"] { background: var(--green); color: var(--button-ink); }
+.theme-switcher button > span:first-child { font-size: 16px; line-height: 1; }
+.loading-theme { display: flex; justify-content: flex-end; margin: -56px 0 32px; }
+.primary { background: var(--green); color: var(--button-ink); border-color: var(--green); }
+.primary:hover:not(:disabled) { background: var(--button-hover); border-color: var(--button-hover); } .card, .dialog, .menu-popover, .avatar.light { background: var(--surface); border-color: var(--line); } .card { border-radius: 14px; } .card-icon, .catalog svg, .mini-card svg { color: var(--green); }
+.avatar.dark, .enemy-hand, .section-title > span, .segmented { background: var(--surface-soft); color: var(--muted-ink); }
+.avatar.dark { border: 1px solid var(--line); }
+.avatar.light { color: var(--ink); }
+.card.selected, .card-help, .menu-popover button:hover:not(:disabled) { background: var(--surface-selected); }
+.card.selected { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+.card.exchange-target { border-color: var(--spell); }
+.card-footer, .history-section li { border-color: var(--line); }
+.empty-hand { border-color: var(--line); background: var(--surface); }
+.card-help small, .hint button, .rules-dialog summary, .turn-status { color: var(--green); }
+.card-icon.astral { color: var(--astral); }
+.card-icon.freeze { color: var(--frost); }
+.card-icon.shield { color: var(--spell); }
+.board { box-shadow: 0 4px 18px var(--shadow); border-radius: 7px; }
+.square.sage { color: var(--board-label-dark); }
+.square.cream { color: var(--board-label-light); }
+.square.last.sage { background: var(--last-dark); }
+.square.last.cream { background: var(--last-light); }
+.square.chosen { background: var(--chosen-square); box-shadow: inset 0 0 0 3px var(--green) !important; }
+.square.spell-target { box-shadow: inset 0 0 0 3px var(--spell) !important; }
+.square.frozen { box-shadow: inset 0 0 0 2px var(--frost); }
+.square.astral { outline-color: var(--astral); }
+.square:hover:not(:disabled) { box-shadow: inset 0 0 0 2px var(--green); }
+.move-dot { background: var(--move-dot); }
+.move-dot.capture { border-color: var(--capture-ring); background: transparent; }
+.square.trap-cell { background: var(--trap); box-shadow: inset 0 0 0 2px var(--trap-edge); }
+.field-marker { color: var(--trap-ink); }
+.square.white-hole { color: #66510e; }
+/* Светлая обводка сохраняет читаемость чёрных фигур на тёмных клетках. */
+:root[data-theme="dark"] .black-piece { fill: #242427; stroke: #c1c1c8; stroke-width: 1.6; }
+:root[data-theme="dark"] .white-piece { fill: #f4f4f6; stroke: #29292e; }
+:root[data-theme="dark"] .piece.ghost { fill: none; }
+.overlay { background: var(--overlay); }
+.dialog, .menu-popover { box-shadow: 0 15px 50px var(--shadow); }
+.dialog input, .dialog select, .loading input, .mini-card { color: var(--ink); background: var(--surface-soft); border: 1px solid var(--line); }
+.segmented button { background: transparent; }
+.segmented button.active { color: var(--green); background: var(--surface); box-shadow: 0 1px 4px var(--shadow); }
+.error { background: var(--danger-surface); color: var(--danger); }
+.resign-button, .menu-popover .menu-reset, .danger { color: var(--danger) !important; }
+.resign-button, .text-button, .close, .hint button, .menu-popover button { background: transparent; }
+.local-dot { background: var(--green); }
+@media(max-width:730px) {
+  .topbar { gap: 8px; margin-bottom: 5px; }
+  .brand { font-size: 16px; gap: 5px; }
+  .brand-mark { font-size: 25px; }
+  .theme-switcher { padding: 2px; gap: 2px; }
+  .theme-switcher button { padding: 5px 8px; }
+  .theme-name { display: none; } .card { border-radius: 9px; }
+}
+@media(max-width:420px) { .network-seat { display: none; } }
+@media(max-height:500px) and (min-width:600px) {
+  .card-list { grid-template-columns: repeat(auto-fit, minmax(45px, 1fr)); }
+  .card strong { font-size: 9px; }
+  .card-footer { font-size: 8px; }
+  .topbar { margin-bottom: 4px; }
+}
+@media(min-height:501px) and (max-height:720px) and (min-width:731px) {
+  .sidebar { gap: 6px; }
+  .card { min-height: 75px; }
+}
+@media(max-height:720px) and (min-width:731px) {
+  .card-list:has(.card:nth-child(4)) { grid-template-columns: repeat(auto-fit, minmax(45px, 1fr)); gap: 5px; }
+  .card-list:has(.card:nth-child(4)) .card-icon { display: none; }
+  .card-list:has(.card:nth-child(4)) .card { min-height: 60px; padding: 5px; }
+  .card-list:has(.card:nth-child(4)) .card strong { font-size: 10px; }
+  .card-help > strong, .card-help > small { display: none; }
+}
+@media(max-height:500px) and (min-width:600px) {
+  .sidebar { gap: 3px; }
+  .history-section li { padding: 0; }
+}
