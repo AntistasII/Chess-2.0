@@ -132,8 +132,8 @@ public final class GameSession {
     }
 
     private static void requireAllowedMode(Game restored, boolean networkOnly) {
-        if (networkOnly && !restored.mode.equals("network"))
-            throw new IllegalArgumentException("На этом сервере доступны только партии на двух игроков со входом по кодам");
+        if (networkOnly && !java.util.Set.of("network", "chatgpt").contains(restored.mode))
+            throw new IllegalArgumentException("В Railway доступны игра с другом и ChatGPT");
     }
 
     /**

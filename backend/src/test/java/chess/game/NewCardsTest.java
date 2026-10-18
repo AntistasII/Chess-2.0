@@ -163,15 +163,37 @@ class NewCardsTest {
         assertTrue(g.legalActions().stream().noneMatch(a -> a.cardId()==revive.id() && a.to()==9 || a.cardId()==sacrifice.id() && a.other()==9));
     }
 
-    @Test void whiteHoleCanBlockCheckAndExpiryCannotLeaveOwnKingInCheck() {
+    @Test void whiteHoleCannotBlockCheckOrBePlayedAsCheckDefence() {
         Game g = game(); g.board.set(52, PieceFactory.create(3,'R',false));
-        assertTrue(g.inCheck(true)); Card hole = card(g,CardType.WHITE_HOLE); cast(g,hole,28);
-        assertFalse(g.inCheck(true));
-        // На последнем полуходе защиты недостаточно просто ждать окончания поля.
-        g.ply = 5; g.whiteTurn = true; g.result = "";
-        g.deck.add(CardCatalog.create(900,CardType.SHIELD));
+        assertTrue(g.inCheck(true)); Card hole = card(g,CardType.WHITE_HOLE);
+        assertTrue(g.legalActions().stream().noneMatch(a -> a.cardId() == hole.id()));
+        g.squareEffects.put(28, new SquareEffect(SquareEffect.Type.WHITE_HOLE, true, 6, 0));
+        assertTrue(g.inCheck(true), "A white hole between king and rook must not hide check");
+        assertTrue(load(g).inCheck(true), "Loading preserves the same attack rules");
         assertTrue(g.legalActions().stream().noneMatch(a -> a.kind().equals("draw")));
-        assertFalse(g.simulate(g.legalActions().getFirst()).inCheck(true));
+        assertTrue(g.legalActions().stream().allMatch(a -> !g.simulate(a).inCheck(true)));
+    }
+
+    @Test void whiteHoleDoesNotShieldRookBishopOrQueenRaysButPiecesStillDo() {
+        for (var setup : List.of(new int[]{'R',52,28,20}, new int[]{'B',32,18,11},
+                new int[]{'Q',52,28,20}, new int[]{'Q',32,18,11})) {
+            Game g = game();
+            g.board.set(setup[1], PieceFactory.create(3, (char)setup[0], false));
+            g.squareEffects.put(setup[2], new SquareEffect(SquareEffect.Type.WHITE_HOLE, false, 6, 0));
+            assertTrue(g.inCheck(true), "Check passes through the white hole: " + (char)setup[0]);
+            g.board.set(setup[3], PieceFactory.create(4, 'N', true));
+            assertFalse(g.inCheck(true), "An actual piece still blocks the ray");
+        }
+    }
+
+    @Test void castlingCannotPassThroughCheckHiddenBehindWhiteHole() {
+        Game g = game();
+        g.board.set(7, PieceFactory.create(3, 'R', true)); g.wKingCastle = true;
+        g.board.set(61, PieceFactory.create(4, 'R', false));
+        g.squareEffects.put(29, new SquareEffect(SquareEffect.Type.WHITE_HOLE, false, 6, 0));
+        assertFalse(g.inCheck(true));
+        assertTrue(g.attacked(5, false), "f1 is attacked through the hole on f4");
+        assertTrue(g.legalActions().stream().noneMatch(a -> a.option().equals("castle")));
     }
     @Test void trapsTriggerOnSwapRevivalSacrificeAndKingEntryIncludingShield() {
         Game g = game(); g.board.set(0,PieceFactory.create(3,'R',true));

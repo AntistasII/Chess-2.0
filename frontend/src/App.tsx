@@ -11,6 +11,7 @@ import { NewGameForm } from './components/NewGameForm';
 import { GameMenu } from './components/GameMenu';
 import { useTurnSound } from './hooks/useTurnSound';
 import { useTheme } from './hooks/useTheme';
+import { supportsApiKeyInput } from './game/api';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 export function App() {
     const { game, error, notice, busy, covered, setCovered, flipped, setFlipped, selected, cardId, firstTarget, choices, setChoices, activeCard, cardActions, canAct, targets, visibleWhite, status, hint, resetSelection, act, execute, clickSquare, selectCard, downloadGame, uploadGame, restartGame, } = useGame();
@@ -46,7 +47,8 @@ export function App() {
         <button onClick={() => location.reload()}>Повторить</button>
     </main>;
     const localMode = selectedMode ?? game.defaultMode;
-    const mode = game.networkOnly ? 'network' : ['ai', 'chatgpt', 'human'].includes(localMode) ? localMode : 'ai';
+    const allowedModes = game.networkOnly ? ['network', 'chatgpt'] : ['ai', 'chatgpt', 'human'];
+    const mode = allowedModes.includes(localMode) ? localMode : allowedModes[0];
     const defaults = game.newGameDefaults[mode];
     const difficulty = gameOptions[mode]?.difficulty ?? defaults.difficulty;
     const setDifficulty = (difficulty: string) => setGameOptions(previous => ({
@@ -120,9 +122,9 @@ export function App() {
             <div className={`dialog ${modal === 'rules' ? 'rules-dialog' : ''}`} onClick={e => e.stopPropagation()}>
                 <button className="close" onClick={closeModal} aria-label="Закрыть">×</button>
                 {modal === 'new' ? <NewGameForm mode={mode} difficulty={difficulty} busy={busy} networkOnly={game.networkOnly}
-                    apiKey={apiKey} setApiKey={setApiKey} openAiConfigured={game.openAiConfigured} apiKeyInputSupported={game.apiKeyInputSupported === true} error={error}
+                    apiKey={apiKey} setApiKey={setApiKey} openAiConfigured={game.openAiConfigured} apiKeyInputSupported={supportsApiKeyInput(game)} error={error}
                     setMode={setMode} setDifficulty={setDifficulty} onStart={async () => {
-                    const started = await act('new', { mode, difficulty, ...(mode === 'chatgpt' && apiKey.trim() ? { apiKey: apiKey.trim() } : {}) });
+                    const started = await act('new', { mode, difficulty, ...(game.networkOnly && mode === 'chatgpt' && apiKey.trim() ? { apiKey: apiKey.trim() } : {}) });
                     if (started) {
                         closeModal();
                         setFlipped(false);

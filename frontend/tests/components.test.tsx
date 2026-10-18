@@ -80,14 +80,24 @@ assert.match(rules, /Обмен планами/);
 const chatForm = renderToStaticMarkup(<NewGameForm mode="chatgpt" difficulty="normal"
   busy={false} setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
 assert.match(chatForm, /ChatGPT/);
-assert.match(chatForm, /API-ключ OpenAI/);
+assert.match(chatForm, /application.yml/);
 assert.doesNotMatch(chatForm, /По сети|Максимум карт|type="number"/);
-assert.match(chatForm, /type="password"/);
+assert.doesNotMatch(chatForm, /type="password"/);
 const cloudForm = renderToStaticMarkup(<NewGameForm mode="network" difficulty="normal" networkOnly busy={false}
   setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
 assert.match(cloudForm, /входит по своему коду/);
-assert.doesNotMatch(cloudForm, /ChatGPT|Локальный ИИ|type="password"|type="number"/);
+assert.match(cloudForm, /ChatGPT/);
+assert.doesNotMatch(cloudForm, /Локальный ИИ|type="password"|type="number"/);
 assert.doesNotMatch(chatForm, /<select/);
+const legacyForm = renderToStaticMarkup(<NewGameForm mode="chatgpt" difficulty="normal" busy={false}
+  networkOnly apiKeyInputSupported={false} setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
+const cloudChat = renderToStaticMarkup(<NewGameForm mode="chatgpt" difficulty="normal" networkOnly busy={false}
+  setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
+assert.match(cloudChat, /type="password"/);
+assert.match(cloudChat, /required/);
+assert.match(legacyForm, /старая версия Java-сервера/);
+assert.match(legacyForm, /<button type="submit"[^>]*disabled/);
+
 assert.equal(gameStatus({...state, mode: 'chatgpt', whiteTurn: false}, true), 'ChatGPT обдумывает ход…');
 console.log('UI checks passed: dynamic hands, concealed cards, variable board sizes, board orientation and modifier badges.');
 
@@ -195,3 +205,14 @@ async function resignationChecks() {
   console.log('Resignation checks passed: same-party retry, role/game isolation, completed game, missing identity and hot-seat turn change.');
 }
 void resignationChecks().catch(error => { console.error(error); process.exitCode = 1; });
+
+async function keyCapabilityChecks() {
+  const {supportsApiKeyInput} = await import('../src/game/api');
+  assert.equal(supportsApiKeyInput(state), false, 'An old server must not silently ignore the key');
+  assert.equal(supportsApiKeyInput({...state, openAiConfigured: false}), true, 'Initial key-input release accepts a new key');
+  assert.equal(supportsApiKeyInput({...state, openAiConfigured: true}), true);
+  assert.equal(supportsApiKeyInput({...state, openAiConfigured: true, networkOnly: true}), false);
+  assert.equal(supportsApiKeyInput({...state, apiKeyInputSupported: false, openAiConfigured: true}), false);
+  console.log('Key input compatibility checks passed: legacy, initial input release and explicit capability.');
+}
+void keyCapabilityChecks().catch(error => { console.error(error); process.exitCode = 1; });

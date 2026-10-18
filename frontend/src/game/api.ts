@@ -1,5 +1,10 @@
 import type { State } from './types';
 export type CommandPath = 'new' | 'action' | 'ai' | 'scout' | 'draw' | 'resign' | 'save' | 'load' | 'import';
+/** Совместимость со сборкой, где ввод ключа появился раньше явного флага возможностей. */
+export function supportsApiKeyInput(state: State): boolean {
+    return state.apiKeyInputSupported ?? (typeof state.openAiConfigured === 'boolean' && !state.networkOnly);
+}
+
 export class ApiError extends Error {
     constructor(message: string, public readonly status: number) { super(message); }
 }

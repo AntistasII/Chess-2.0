@@ -37,12 +37,23 @@ public interface MovementContext {
      * Промежуточные клетки должны быть пусты; астральные фигуры тоже перекрывают луч.
      */
     default boolean clearRay(int from, int to) {
+        return clearRay(from, to, true);
+    }
+
+    /** Белая дыра запрещает движение, но не защищает короля от атаки по линии. */
+    default boolean clearAttackRay(int from, int to) {
+        return clearRay(from, to, false);
+    }
+
+    private boolean clearRay(int from, int to, boolean movement) {
         var geometry = geometry();
         int dr = Integer.signum(geometry.rank(to) - geometry.rank(from));
         int df = Integer.signum(geometry.file(to) - geometry.file(from));
         int rank = geometry.rank(from) + dr, file = geometry.file(from) + df;
         while (rank != geometry.rank(to) || file != geometry.file(to)) {
-            if (!geometry.inside(rank, file) || (pieceAt(geometry.index(rank, file)) != null || blocked(geometry.index(rank, file)))) return false;
+            if (!geometry.inside(rank, file)) return false;
+            int square = geometry.index(rank, file);
+            if (pieceAt(square) != null || movement && blocked(square)) return false;
             rank += dr;
             file += df;
         }

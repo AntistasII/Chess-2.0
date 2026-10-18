@@ -13,7 +13,7 @@ import java.net.http.*;
 import java.time.Duration;
 import java.util.*;
 
-/** Соперник через Responses API. Ключ берётся из конфигурации или локального окна новой партии. */
+/** Соперник через Responses API. Ключ берётся из конфигурации или окна новой партии в Railway. */
 public final class ChatGptOpponent extends Opponent {
     private final String apiKey;
     private final String model;

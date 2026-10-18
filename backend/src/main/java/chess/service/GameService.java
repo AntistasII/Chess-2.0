@@ -56,15 +56,19 @@ public final class GameService {
 
         if (request.operation() == GameOperation.NEW_GAME) {
             String mode = request.text("mode", networkOnly ? "network" : null);
-            if (networkOnly && !"network".equals(mode))
-                throw new IllegalArgumentException("На этом сервере играют вдвоём со входом по кодам");
+            if (networkOnly && !Set.of("network", "chatgpt").contains(mode))
+                throw new IllegalArgumentException("В Railway доступны игра с другом и ChatGPT");
+            String key = networkOnly ? request.text("apiKey", null) : null;
+            if (networkOnly && "chatgpt".equals(mode) && (key == null || key.isBlank()))
+                throw new IllegalArgumentException("Для игры с ChatGPT в Railway введите API-ключ OpenAI");
             session.newGame(mode, request.optionalInteger("handLimit"), request.text("difficulty", null),
-                    networkOnly ? null : request.text("apiKey", null));
+                    key);
             return new ApiResponse(view(owner), grant.cookies());
         }
         if (request.operation() == GameOperation.RESET) {
             session.requireVersion(request.version());
-            session.reset();
+            if (networkOnly) session.newGame("network", null, null);
+            else session.reset();
             return new ApiResponse(OK, access.reset());
         }
         return command(request, grant);
@@ -103,8 +107,9 @@ public final class GameService {
     private Map<String, Object> withRequestSettings(Map<String, Object> state) {
         // Клиент получает только политику повторов, без ключа и остальных секретов.
         state.put("networkOnly", networkOnly);
-        state.put("openAiConfigured", !networkOnly && session.chatGptConfigured());
-        state.put("apiKeyInputSupported", !networkOnly);
+        if (networkOnly) state.put("defaultMode", "network");
+        state.put("openAiConfigured", session.chatGptConfigured());
+        state.put("apiKeyInputSupported", networkOnly);
         state.put("opponentRetryLimit", openAi != null && "chatgpt".equals(state.get("mode")) ? openAi.maxRetries() : 0);
         return state;
     }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ApiError, request, requestOpponent, requestResignation, type CommandPath } from '../game/api';
+import { ApiError, request, requestOpponent, requestResignation, supportsApiKeyInput, type CommandPath } from '../game/api';
 import { gameStatus, selectionHint } from '../game/catalog';
 import type { Action, Card, State } from '../game/types';
 export function useGame() {
@@ -72,7 +72,7 @@ export function useGame() {
     async function act(path: CommandPath, body: object) {
         if (!game || busy || commandInFlight.current)
             return false;
-        if (path === 'new' && 'apiKey' in body && game.apiKeyInputSupported !== true) {
+        if (path === 'new' && 'apiKey' in body && !supportsApiKeyInput(game)) {
             setError('Старая версия сервера не принимает API-ключ из формы. Пересоберите и перезапустите Server, затем обновите страницу.');
             return false;
         }

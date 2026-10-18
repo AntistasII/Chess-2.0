@@ -40,6 +40,6 @@ public abstract class SlidingPiece extends Piece {
         int distance = Math.max(Math.abs(dr), Math.abs(df));
         boolean straight = dr == 0 || df == 0 || Math.abs(dr) == Math.abs(df);
         return distance > 0 && straight && distance <= maxDistance(geometry)
-                && supportsDirection(Integer.signum(dr), Integer.signum(df)) && context.clearRay(from, target);
+                && supportsDirection(Integer.signum(dr), Integer.signum(df)) && context.clearAttackRay(from, target);
     }
 }

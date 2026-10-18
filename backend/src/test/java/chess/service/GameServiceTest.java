@@ -137,4 +137,29 @@ class GameServiceTest {
         assertEquals("network", state(service, owner).get("mode"));
     }
 
+    @Test void infrastructureControlsKeySourceAndCloudChatRequiresExplicitKey() throws Exception {
+        var config = new chess.config.OpenAiProperties("config-key", "test-model", java.time.Duration.ofSeconds(10), 0);
+        var chat = chess.opponent.ChatGptOpponent.fromConfig(config);
+        var session = chess.game.TestSessions.create(g -> "draw", chat);
+        var local = new GameService(session, "", "");
+        var owner = new ClientIdentity(true, null);
+        assertEquals(false, state(local, owner).get("apiKeyInputSupported"));
+        // Invalid form input must not replace the key read from configuration locally.
+        local.execute(owner, command(GameOperation.NEW_GAME, Map.of("mode", "chatgpt", "apiKey", "bad key")));
+        assertEquals(true, state(local, owner).get("openAiConfigured"));
+        session.newGame("network", 3, "normal");
+        var cloud = new GameService(session, "test-owner-code-123456", "test-friend-code-654321");
+        var host = login(cloud, "test-owner-code-123456");
+        assertEquals("network", state(cloud, host).get("defaultMode"));
+        assertEquals(true, state(cloud, host).get("apiKeyInputSupported"));
+        assertThrows(IllegalArgumentException.class, () -> cloud.execute(host,
+                command(GameOperation.NEW_GAME, Map.of("mode", "chatgpt"))));
+        cloud.execute(host, command(GameOperation.NEW_GAME, Map.of("mode", "chatgpt", "apiKey", "cloud-key")));
+        assertEquals("chatgpt", state(cloud, host).get("mode"));
+        assertFalse(state(cloud, host).toString().contains("cloud-key"));
+        cloud.execute(host, command(GameOperation.RESET, Map.of("version", state(cloud, host).get("version"))));
+        var relogged = login(cloud, "test-owner-code-123456");
+        assertEquals("network", state(cloud, relogged).get("mode"));
+    }
+
 }
