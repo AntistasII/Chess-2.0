@@ -80,7 +80,7 @@ assert.match(rules, /Обмен планами/);
 const chatForm = renderToStaticMarkup(<NewGameForm mode="chatgpt" difficulty="normal"
   busy={false} setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
 assert.match(chatForm, /ChatGPT/);
-assert.match(chatForm, /application.yml/);
+assert.doesNotMatch(chatForm, /Ключ OpenAI берётся из application.yml/);
 assert.doesNotMatch(chatForm, /По сети|Максимум карт|type="number"/);
 assert.doesNotMatch(chatForm, /type="password"/);
 const cloudForm = renderToStaticMarkup(<NewGameForm mode="network" difficulty="normal" networkOnly busy={false}
@@ -95,7 +95,8 @@ const cloudChat = renderToStaticMarkup(<NewGameForm mode="chatgpt" difficulty="n
   setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
 assert.match(cloudChat, /type="password"/);
 assert.match(cloudChat, /required/);
-assert.match(legacyForm, /старая версия Java-сервера/);
+assert.match(legacyForm, /Не удалось подключить ChatGPT/);
+assert.doesNotMatch(legacyForm, /Java|Server|application\.yml|памяти сервера/);
 assert.match(legacyForm, /<button type="submit"[^>]*disabled/);
 
 assert.equal(gameStatus({...state, mode: 'chatgpt', whiteTurn: false}, true), 'ChatGPT обдумывает ход…');

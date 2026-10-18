@@ -73,7 +73,7 @@ export function useGame() {
         if (!game || busy || commandInFlight.current)
             return false;
         if (path === 'new' && 'apiKey' in body && !supportsApiKeyInput(game)) {
-            setError('Старая версия сервера не принимает API-ключ из формы. Пересоберите и перезапустите Server, затем обновите страницу.');
+            setError('Не удалось подключить ChatGPT. Обновите страницу и попробуйте ещё раз.');
             return false;
         }
         commandInFlight.current = true;
@@ -150,7 +150,7 @@ export function useGame() {
             if (file.size > 9_900_000) throw new Error('Файл сохранения слишком большой.');
             const save = JSON.parse(await file.text());
             await act('import', { save });
-        } catch (e) { setError(e instanceof SyntaxError ? 'Файл содержит некорректный JSON.'
+        } catch (e) { setError(e instanceof SyntaxError ? 'Не удалось прочитать сохранённую партию. Выберите другой файл.'
             : e instanceof Error ? e.message : 'Ошибка загрузки файла'); }
     }
     function execute(actions: Action[]) {

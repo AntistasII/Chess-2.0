@@ -112,7 +112,7 @@ export function App() {
             <p className="muted small">Партия начинается. Белые ходят первыми.</p> :
             <ol>{game.history.slice(-6).reverse().map((line, i) => <li key={`${game.ply}-${i}`}><span className="history-number">{game.ply - i}</span>{line}</li>)}</ol>}
                 </section>
-                <div className="sidebar-footer"><span className="local-dot"/>{game.mode === 'chatgpt' ? 'ChatGPT · OpenAI API' : game.mode === 'network' ? 'Сетевая игра · по IP' : 'Локальная игра · без интернета'}{game.canClaimDraw && canAct && <button onClick={() => void act('draw', {})}>Заявить ничью</button>}
+                <div className="sidebar-footer"><span className="local-dot"/>{game.mode === 'chatgpt' ? 'Игра с ChatGPT' : game.mode === 'network' ? 'Игра с другом по сети' : 'Локальная игра · без интернета'}{game.canClaimDraw && canAct && <button onClick={() => void act('draw', {})}>Заявить ничью</button>}
                 </div>
             </aside>
         </main>

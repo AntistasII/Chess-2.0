@@ -16,7 +16,7 @@ type Props = {
 };
 const modes = [
     { id: 'ai', icon: '♞', name: 'Локальный ИИ', description: 'Компьютерный соперник без интернета' },
-    { id: 'chatgpt', icon: '✦', name: 'ChatGPT', description: 'Соперник через OpenAI API' },
+    { id: 'chatgpt', icon: '✦', name: 'ChatGPT', description: 'Игра с ChatGPT' },
     { id: 'human', icon: '♙', name: 'Вдвоём', description: 'Два игрока на одном устройстве' },
 ];
 
@@ -43,15 +43,15 @@ export function NewGameForm({ mode, difficulty, busy, networkOnly = false, apiKe
             </select>
         </label>}
         {networkOnly && mode === 'chatgpt' && <div className="api-key-settings">
-            <label className="new-game-field">API-ключ OpenAI
+            <label className="new-game-field">Ключ ChatGPT
                 <input type="password" autoComplete="off" spellCheck={false} maxLength={1024} disabled={busy || !apiKeyInputSupported}
                     value={apiKey} onChange={event => setApiKey(event.target.value)} required
-                    placeholder="Вставьте API-ключ"/>
+                    placeholder="Вставьте ключ"/>
             </label>
-            {!apiKeyInputSupported && <p className="new-game-error" role="alert">Запущена старая версия Java-сервера, которая не принимает ключ из этого окна. Остановите Server, пересоберите проект и запустите Server заново. Затем обновите страницу.</p>}
-            <p className="new-game-note">Ключ хранится только в памяти сервера, не попадает в файл партии. Запросы OpenAI оплачиваются отдельно.</p>
+            {!apiKeyInputSupported && <p className="new-game-error" role="alert">Не удалось подключить ChatGPT. Обновите страницу и попробуйте ещё раз.</p>}
+            <p className="new-game-note">Для игры нужен ключ ChatGPT. Использование оплачивается отдельно.</p>
         </div>}
-        {!networkOnly && mode === 'chatgpt' && <p className="new-game-note">Ключ OpenAI берётся из application.yml (openai.api-key).{!openAiConfigured && ' Укажите ключ в настройках и перезапустите сервер.'}</p>}
+        {!networkOnly && mode === 'chatgpt' && !openAiConfigured && <p className="new-game-note">ChatGPT пока недоступен. Выберите другого соперника.</p>}
         <p className="new-game-note">Начинаем без карт. Взять или применить карту можно вместо хода.</p>
         {error && <p className="new-game-error" role="alert">{error}</p>}
         <button type="submit" className="primary new-game-start" disabled={busy || (networkOnly && mode === 'chatgpt' && (!apiKeyInputSupported || (!openAiConfigured && !apiKey.trim())))}>
