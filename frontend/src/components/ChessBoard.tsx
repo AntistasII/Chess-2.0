@@ -1,3 +1,4 @@
+import { useBoardAnimation } from '../hooks/useBoardAnimation';
 import { Icon } from './Icon';
 import { PieceIcon } from './PieceIcon';
 import { pieceNames } from '../game/catalog';
@@ -6,9 +7,11 @@ import type { BoardSize, Piece, SquareEffect } from '../game/types';
 
 type Props = {
     board: Piece[];
+    gameId?: string;
     effects?: SquareEffect[];
     size?: BoardSize;
     check: boolean;
+    whiteTurn?: boolean;
     flipped: boolean;
     selected: number | null;
     firstTarget: number | null;
@@ -18,13 +21,14 @@ type Props = {
     onSquare: (square: number) => void;
 };
 
-export function ChessBoard({ board, effects = [], size = standardBoard, check, flipped, selected, firstTarget, targets, spellActive, lastAction, onSquare }: Props) {
+export function ChessBoard({ board, gameId, effects = [], size = standardBoard, check, whiteTurn = true, flipped, selected, firstTarget, targets, spellActive, lastAction, onSquare }: Props) {
+    const animationRoot = useBoardAnimation(board, size, flipped, gameId);
     const { width, height, originFile, originRank } = size;
     const fields = new Map(effects.map(effect => [effect.square, effect]));
     const pieces = new Map(board.map(piece => [piece.square, piece]));
     // Точное сравнение подписей отличает, например, a1 от a10 на расширенной доске.
     const lastMove = lastAction.match(/([a-z]+\d+)\s→\s([a-z]+\d+)/);
-    return <div className={`board ${check ? 'in-check' : ''}`} role="group"
+    return <div ref={animationRoot} className={`board ${check ? 'in-check' : ''}`} role="group"
         style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, aspectRatio: `${width} / ${height}`, width: `min(100cqw, ${100 * width / height}cqh)` }}
         aria-label={`Доска ${width} на ${height}, ${flipped ? 'чёрные' : 'белые'} снизу`}>
         {boardOrder(size, flipped).map(s => {
@@ -32,16 +36,17 @@ export function ChessBoard({ board, effects = [], size = standardBoard, check, f
             const label = squareName(s, width);
             const effect = fields.get(s);
             const p = pieces.get(s), legal = targets.has(s), chosen = selected === s || firstTarget === s;
+            const checkedKing = check && p?.type === 'K' && p.white === whiteTurn;
             const last = lastMove?.[1] === label || lastMove?.[2] === label;
             // Вставка слева или снизу сохраняет цвета прежних клеток.
             const sage = (rank + file - originRank - originFile) % 2 === 0;
-            return <button key={s}
-                className={`square ${sage ? 'sage' : 'cream'} ${chosen ? 'chosen' : ''} ${legal && spellActive ? 'spell-target' : ''} ${p?.frozen ? 'frozen' : ''} ${p?.astral ? 'astral' : ''} ${last ? 'last' : ''} ${effect ? effect.type === 'WHITE_HOLE' ? 'white-hole' : 'trap-cell' : ''}`}
+            return <button key={s} data-square={s}
+                className={`square ${sage ? 'sage' : 'cream'} ${chosen ? 'chosen' : ''} ${checkedKing ? 'king-in-check' : ''} ${legal && spellActive ? 'spell-target' : ''} ${p?.frozen ? 'frozen' : ''} ${p?.astral ? 'astral' : ''} ${last ? 'last' : ''} ${effect ? effect.type === 'WHITE_HOLE' ? 'white-hole' : 'trap-cell' : ''}`}
                 onClick={() => onSquare(s)}
-                aria-label={`${label}${p ? `: ${p.white ? 'белые' : 'чёрные'} ${pieceNames[p.type]}${p.astral ? ', астрал' : ''}${p.frozen ? ', заморозка' : ''}${p.shield ? ', щит' : ''}${p.boost ? ', усиление' : ''}` : ', пусто'}${effect ? `, ${effect.type === 'WHITE_HOLE' ? 'белая дыра' : effect.type === 'HIDDEN_TRAP' ? 'невидимый капкан' : 'капкан'}, осталось ${effect.turns}` : ''}`}
+                aria-label={`${label}${p ? `: ${p.white ? 'белые' : 'чёрные'} ${pieceNames[p.type]}${p.astral ? ', астрал' : ''}${p.frozen ? ', заморозка' : ''}${p.shield ? ', щит' : ''}${p.boost ? ', усиление' : ''}${checkedKing ? ', шах' : ''}` : ', пусто'}${effect ? `, ${effect.type === 'WHITE_HOLE' ? 'белая дыра' : effect.type === 'HIDDEN_TRAP' ? 'невидимый капкан' : 'капкан'}, осталось ${effect.turns}` : ''}`}
                 aria-pressed={chosen}>
                 {effect && <span className="field-marker" title={`Осталось кругов: ${effect.turns}`}>{effect.type === 'WHITE_HOLE' ? '✦' : '⌁'}{effect.turns}</span>}
-                {p && <PieceIcon type={p.type} white={p.white} ghost={p.astral}/>}
+                {p && <span data-piece-id={p.id} className={`piece-visual ${p.shield ? 'piece-shielded' : ''}`}><PieceIcon type={p.type} white={p.white} ghost={p.astral}/></span>}
                 {legal && !spellActive && <span className={`move-dot ${p ? 'capture' : ''}`}/>}
                 {p && <span className="badges">
                     {p.boost && <span className="badge boost" title="Усиление до любого хода">↟</span>}

@@ -16,7 +16,7 @@ public final class ShieldCard extends TargetedCard {
 
     @Override
     public boolean canTarget(Piece piece, boolean own) {
-        return own && !piece.shield();
+        return own && piece.type() != 'K' && !piece.shield();
     }
 
     @Override

@@ -17,6 +17,15 @@ class NewCardsTest {
     }
     private Game load(Game g) { return GameSave.decode(JsonCodec.readObject(JsonCodec.toJson(GameSave.encode(g)))); }
 
+    @Test void shieldCannotTargetKingButCanProtectOwnPawn() {
+        Game g = game();
+        Card shield = card(g, CardType.SHIELD);
+        g.board.set(8, PieceFactory.create(3, 'P', true));
+        var actions = g.legalActions().stream().filter(a -> a.cardId() == shield.id()).toList();
+        assertTrue(actions.stream().noneMatch(a -> a.to() == 4 || a.to() == 60));
+        assertTrue(actions.stream().anyMatch(a -> a.to() == 8));
+    }
+
     @Test void undoRestoresCaptureAndFreezesMoverForOneOwnerAction() {
         Game g = game();
         g.board.set(0, PieceFactory.create(3, 'R', true));

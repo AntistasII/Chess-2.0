@@ -1,3 +1,4 @@
+import { useCardAnimation } from '../hooks/useCardAnimation';
 import { Icon } from './Icon';
 import { descriptions } from '../game/catalog';
 import type { Action, Card, State } from '../game/types';
@@ -14,7 +15,8 @@ type Props = {
     onScout: (cardId: number) => void;
 };
 export function CardHand({ game, covered, canAct, cardId, activeCard, cardActions, hint, selectCard, execute, onScout }: Props) {
-    return <section className="hand-section">
+    const animationRoot = useCardAnimation(game, covered);
+    return <section ref={animationRoot} className="hand-section">
                     <div className="section-title"><h2>Ваши карты</h2>
                         <span>{covered ? '—' : game.hand.length} / {game.handLimit}</span></div>
                     {covered ?
@@ -24,7 +26,7 @@ export function CardHand({ game, covered, canAct, cardId, activeCard, cardAction
             <div className="card-list">{game.hand.map(card => {
                     const usable = game.actions.some(a => a.cardId === card.id);
                     const exchangeTarget = activeCard?.type === 'EXCHANGE' && cardActions.some(a => a.other === card.id);
-                    return <button key={card.id} className={`card ${card.id === cardId ? 'selected' : ''} ${exchangeTarget ? 'exchange-target' : ''} ${!usable ? 'unavailable' : ''}`} onClick={() => exchangeTarget ? execute(cardActions.filter(a => a.other === card.id)) : selectCard(card)} disabled={!canAct} title={descriptions[card.type]}><span className={`card-icon ${card.type.toLowerCase()}`}><Icon type={card.type}/></span><strong>{card.name}</strong>
+                    return <button key={card.id} data-card-id={card.id} className={`card ${card.id === cardId ? 'selected' : ''} ${exchangeTarget ? 'exchange-target' : ''} ${!usable ? 'unavailable' : ''}`} onClick={() => exchangeTarget ? execute(cardActions.filter(a => a.other === card.id)) : selectCard(card)} disabled={!canAct} title={descriptions[card.type]}><span className={`card-icon ${card.type.toLowerCase()}`}><Icon type={card.type}/></span><strong>{card.name}</strong>
                                     <p>{descriptions[card.type]}</p><span className="card-footer">{exchangeTarget ? 'Обменять эту карту' : usable ? 'Вместо хода' : 'Нет доступной цели'}</span>
                                 </button>;
                 })}</div>}

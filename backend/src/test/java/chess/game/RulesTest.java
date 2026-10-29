@@ -76,10 +76,10 @@ public final class RulesTest {
         check(!hasMove(g,4,2),"Boosted king cannot cross attacked intermediate square");
         g.board.set(19, null);check(hasMove(g,4,2),"Boosted king moves two safely");
 
-        g=empty();g.board.set(56, PieceFactory.create(3,'R',false));var shield=card(g,CardType.SHIELD);cast(g,shield,4);
+        g=empty();g.board.set(56, PieceFactory.create(3,'R',false));g.board.set(8, PieceFactory.create(4,'R',true));var shield=card(g,CardType.SHIELD);cast(g,shield,8);
         card(g,CardType.ASTRAL);card(g,CardType.FREEZE);card(g,CardType.CLEANSE);
-        check(g.legalActions().stream().noneMatch(a->a.kind().equals("card")&&a.to()==4),"Enemy spells cannot target shielded king");
-        move(g,60,59);move(g,4,5);check(!g.board.get(5).shield(),"Shield expires on own move");
+        check(g.legalActions().stream().noneMatch(a->a.kind().equals("card")&&a.to()==8),"Enemy spells cannot target shielded rook");
+        move(g,60,59);move(g,8,9);check(!g.board.get(9).shield(),"Shield expires on own move");
 
         g=empty();g.board.set(56, PieceFactory.create(3,'R',false));var freeze=card(g,CardType.FREEZE);cast(g,freeze,56);
         check(!hasMove(g,56,48),"Frozen rook cannot move");check(g.attacked(0,false),"Frozen rook still attacks");

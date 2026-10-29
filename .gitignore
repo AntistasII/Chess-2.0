@@ -17,3 +17,9 @@ frontend/*.tsbuildinfo
 # Maven / Spring Boot
 backend/target/
 target/
+
+# Android builds and local SDK paths
+android/.gradle/
+android/**/build/
+android/local.properties
+artifacts/

@@ -28,7 +28,7 @@ function hand(count: number, covered = false) {
 }
 assert.match(hand(0), /Пока нет карт/);
 for (const count of [1, 3, 5]) {
-  assert.equal((hand(count).match(/<button class="card /g) ?? []).length, count);
+  assert.equal((hand(count).match(/<button[^>]*class="card /g) ?? []).length, count);
 }
 assert.doesNotMatch(hand(5, true), /Астрал|Разведка|Очищение/);
 assert.match(hand(5, true), /Карты скрыты/);
@@ -217,3 +217,27 @@ async function keyCapabilityChecks() {
   console.log('Key input compatibility checks passed: legacy, initial input release and explicit capability.');
 }
 void keyCapabilityChecks().catch(error => { console.error(error); process.exitCode = 1; });
+
+for (const whiteTurn of [true, false]) {
+  for (const flipped of [true, false]) {
+    const kings = [
+      {square: 4, id: 1, type: 'K', white: true, boost: false, shield: false, frozen: false, astral: false},
+      {square: 60, id: 2, type: 'K', white: false, boost: false, shield: false, frozen: false, astral: false},
+    ];
+    const render = (check: boolean) => renderToStaticMarkup(<ChessBoard board={kings} check={check} whiteTurn={whiteTurn}
+      flipped={flipped} selected={whiteTurn ? 4 : 60} firstTarget={null} targets={new Set()} spellActive={false}
+      lastAction="" onSquare={() => {}}/>);
+    assert.equal((render(true).match(/king-in-check/g) ?? []).length, 1);
+    assert.match(render(true), new RegExp(`aria-label="${whiteTurn ? 'e1: белые' : 'e8: чёрные'} Король, шах"`));
+    assert.doesNotMatch(render(false), /king-in-check|, шах/);
+  }
+}
+console.log('Check highlight passed: either king, both orientations, removal after check.');
+
+const androidChatForm = renderToStaticMarkup(<NewGameForm mode="chatgpt" difficulty="normal" busy={false}
+  apiKeyEntry openAiConfigured apiKeyInputSupported
+  setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
+assert.match(androidChatForm, /type="password"/);
+assert.match(androidChatForm, /Новый ключ \(необязательно\)/);
+assert.doesNotMatch(androidChatForm, /required|пока недоступен/);
+console.log('Android key form passed: entry enabled locally, saved key can be reused.');

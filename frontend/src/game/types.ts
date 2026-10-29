@@ -46,6 +46,7 @@ export type State = {
     networkOnly?: boolean;
     openAiConfigured?: boolean;
     apiKeyInputSupported?: boolean;
+    apiKeyEntry?: boolean;
     newGameDefaults: Record<string, { handLimit: number; difficulty: string }>;
     board: Piece[];
     boardSize: BoardSize;

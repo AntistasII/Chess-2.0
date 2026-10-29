@@ -16,7 +16,7 @@ export function TurnDialogs({ game, covered, busy, choices, execute, onReady, on
     return <>
         {covered && !game.result && <div className="overlay">
             <div className="dialog pass-dialog"><span className="dialog-symbol">{game.whiteTurn ? '♔' : '♚'}</span>
-                <h2>Ход {game.whiteTurn ? 'белых' : 'чёрных'}</h2><p>Передайте компьютер следующему игроку.<br />Карты
+                <h2>Ход {game.whiteTurn ? 'белых' : 'чёрных'}</h2><p>Передайте устройство следующему игроку.<br />Карты
                     соперника остаются скрытыми.</p>
                 <button className="primary" onClick={onReady}>Показать мои карты
                 </button>

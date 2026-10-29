@@ -79,7 +79,7 @@ export function App() {
                     </div>
                     <div className="enemy-hand" title={`${game.enemyCards} скрытых карт`}><Icon type="deck"/><span>{game.enemyCards}</span></div>
                 </div>
-                <div className="board-space"><ChessBoard effects={covered ? game.squareEffects?.filter(e => e.type !== 'HIDDEN_TRAP') : game.squareEffects} board={game.board} size={game.boardSize} check={game.check} flipped={flipped} selected={selected} firstTarget={firstTarget} targets={targets} spellActive={Boolean(activeCard)} lastAction={game.history.at(-1) ?? ''} onSquare={clickSquare}/></div>
+                <div className="board-space"><ChessBoard gameId={game.gameId} effects={covered ? game.squareEffects?.filter(e => e.type !== 'HIDDEN_TRAP') : game.squareEffects} board={game.board} size={game.boardSize} check={game.check} whiteTurn={game.whiteTurn} flipped={flipped} selected={selected} firstTarget={firstTarget} targets={targets} spellActive={Boolean(activeCard)} lastAction={game.history.at(-1) ?? ''} onSquare={clickSquare}/></div>
                 <div className="player-row bottom">
                     <div className="player-info"><span className="avatar light">{visibleWhite ? '♔' : '♚'}</span>
                         <div>
@@ -122,9 +122,9 @@ export function App() {
             <div className={`dialog ${modal === 'rules' ? 'rules-dialog' : ''}`} onClick={e => e.stopPropagation()}>
                 <button className="close" onClick={closeModal} aria-label="Закрыть">×</button>
                 {modal === 'new' ? <NewGameForm mode={mode} difficulty={difficulty} busy={busy} networkOnly={game.networkOnly}
-                    apiKey={apiKey} setApiKey={setApiKey} openAiConfigured={game.openAiConfigured} apiKeyInputSupported={supportsApiKeyInput(game)} error={error}
+                    apiKeyEntry={game.apiKeyEntry} apiKey={apiKey} setApiKey={setApiKey} openAiConfigured={game.openAiConfigured} apiKeyInputSupported={supportsApiKeyInput(game)} error={error}
                     setMode={setMode} setDifficulty={setDifficulty} onStart={async () => {
-                    const started = await act('new', { mode, difficulty, ...(game.networkOnly && mode === 'chatgpt' && apiKey.trim() ? { apiKey: apiKey.trim() } : {}) });
+                    const started = await act('new', { mode, difficulty, ...(supportsApiKeyInput(game) && mode === 'chatgpt' && apiKey.trim() ? { apiKey: apiKey.trim() } : {}) });
                     if (started) {
                         closeModal();
                         setFlipped(false);
