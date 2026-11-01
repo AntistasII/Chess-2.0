@@ -69,6 +69,11 @@ public final class MainActivity extends Activity {
         if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
             WebView.setWebContentsDebuggingEnabled(true);
         web = new WebView(this);
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    () -> { if (web.canGoBack()) web.goBack(); else finish(); });
+        }
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
         errorPanel = new LinearLayout(this);
         errorPanel.setOrientation(LinearLayout.VERTICAL);
@@ -268,6 +273,8 @@ public final class MainActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state) { super.onSaveInstanceState(state); web.saveState(state); }
     @Override protected void onPause() { web.onPause(); CookieManager.getInstance().flush(); super.onPause(); }
     @Override protected void onResume() { super.onResume(); web.onResume(); }
+    // Android 13+ uses the platform callback registered in onCreate; this is the legacy fallback.
+    @SuppressLint("GestureBackNavigation")
     @Override public void onBackPressed() {
         if (web.canGoBack()) web.goBack(); else super.onBackPressed();
     }

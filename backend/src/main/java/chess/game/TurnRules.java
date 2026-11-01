@@ -23,6 +23,18 @@ final class TurnRules {
         return out;
     }
 
+    List<Game.Transition> legalTransitions(java.util.function.Predicate<Action> filter) {
+        if (!game.result.isEmpty()) return List.of();
+        var out = new ArrayList<Game.Transition>();
+        boolean actor = game.whiteTurn;
+        for (Action action : pseudoActions()) {
+            if (!filter.test(action)) continue;
+            Game next = game.simulate(action);
+            if (!next.inCheck(actor)) out.add(new Game.Transition(action, next));
+        }
+        return out;
+    }
+
     private List<Action> pseudoActions() {
         if (game.scouting >= 0) {
             Card c = CardCatalog.create(game.scouting, CardType.SCOUT);
@@ -48,7 +60,10 @@ final class TurnRules {
     }
 
     void applyUnchecked(Action a) {
-        MoveUndo nextUndo = a.kind().equals("move") ? MoveUndo.before(game, a) : null;
+        // В расчётных копиях снимок отмены нужен лишь тому, кто ходит следующим и держит эту карту.
+        MoveUndo nextUndo = a.kind().equals("move") && (!game.simulation
+                || game.hand(!game.whiteTurn).stream().anyMatch(c -> c.type() == CardType.UNDO_MOVE))
+                ? MoveUndo.before(game, a) : null;
         var positionsBefore = new HashMap<Integer, String>();
         var oldGeometry = game.boardGeometry();
         if (!game.squareEffects.isEmpty()) for (int square = 0; square < game.board.size(); square++) {

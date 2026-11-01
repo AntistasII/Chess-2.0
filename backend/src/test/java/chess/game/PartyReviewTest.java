@@ -18,8 +18,8 @@ class PartyReviewTest {
     }
 
     @Test void searchRejectsPassiveDefenceAndLosingRookExchange() {
-        int[] turns = {40,46,72,78};
-        String[] inferior = {"move:42:57:","move:41:26:","move:55:47:","move:58:42:"};
+        int[] turns = {40,46,78};
+        String[] inferior = {"move:42:57:","move:41:26:","move:58:42:"};
         for (int i = 0; i < turns.length; i++) {
             var position = ReviewedParty.before(turns[i]);
             var allowed = TacticalHints.saferActionIds(TacticalHints.forPosition(position));
@@ -27,9 +27,20 @@ class PartyReviewTest {
             var review = TestSessions.ai().analyze(position, allowed);
             assertTrue(review.depth() >= 1);
             assertEquals(allowed, review.scores().keySet(), "Scores must cover a completed iteration");
-            assertFalse(review.competitiveActions().contains(inferior[i]), "Inferior action " + turns[i]);
+            double best = review.scores().get(review.actionId());
+            assertTrue(review.scores().get(inferior[i]) <= best - 50, "Inferior action " + turns[i]);
             assertTrue(review.competitiveActions().contains(review.actionId()));
+            assertNotEquals(inferior[i], TestSessions.ai().choose(position), "Local AI avoids action " + turns[i]);
         }
+    }
+
+    /** Перед действием 72 у чёрных уже нет защиты: после любого хода белые ставят мат в 3 хода. */
+    @Test void searchRecognisesForcedMateAgainstEveryDefence() {
+        var position = ReviewedParty.before(72);
+        var allowed = TacticalHints.saferActionIds(TacticalHints.forPosition(position));
+        var review = TestSessions.ai().analyze(position, allowed);
+        assertEquals(allowed, review.scores().keySet());
+        assertTrue(review.scores().values().stream().allMatch(v -> v < -500_000), review.scores().toString());
     }
 
     @Test void preservesGoodCapturesAndForcedDefencesInLostPositions() {

@@ -1,4 +1,4 @@
-package chess.ai;
+package chess.legacyai;
 
 import chess.game.Action;
 import chess.game.Game;

@@ -16,6 +16,14 @@ class KnightEscapeTest {
         return g.movementOptions(44).stream().anyMatch(a->!g.isSquareAttacked(a.to(),true));
     }
 
+    /** После ответа d4–d5 у чёрных остаётся действие без потери фигуры (или пешка не может пойти). */
+    private boolean pawnAttackFails(Game g) {
+        var push=g.legalActions().stream().filter(a->a.id().equals("move:27:35:")).findFirst();
+        if(push.isEmpty()) return true;
+        var hints=TacticalHints.forPosition(g.simulate(push.get()).observationForCurrentPlayer());
+        return hints.stream().mapToInt(h->((Number)h.get("worstMaterialDeltaAfterRecapture")).intValue()).max().orElse(-1000)>-100;
+    }
+
     @Test void opensEscapeBeforePawnAttackInsteadOfUnrelatedFlankMove() throws Exception {
         for(int turn:new int[]{34,36}) {
             var g=before(turn);
@@ -24,7 +32,8 @@ class KnightEscapeTest {
             String chosen=TestSessions.ai().choose(g);
             var action=g.legalActions().stream().filter(a->a.id().equals(chosen)).findFirst().orElseThrow();
             var next=g.simulate(action);
-            assertTrue(hasSafeExit(next),"Action "+turn+" must open a route for the trapped knight: "+chosen);
+            assertTrue(hasSafeExit(next) || pawnAttackFails(next),
+                    "Action "+turn+" must save the trapped knight from d4–d5: "+chosen);
             assertEquals(snapshot,GameSave.encode(g));
         }
     }

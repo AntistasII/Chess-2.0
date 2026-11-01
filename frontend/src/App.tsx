@@ -47,7 +47,7 @@ export function App() {
         <button onClick={() => location.reload()}>Повторить</button>
     </main>;
     const localMode = selectedMode ?? game.defaultMode;
-    const allowedModes = game.networkOnly ? ['network', 'chatgpt'] : ['ai', 'chatgpt', 'human'];
+    const allowedModes = game.offlineApp ? ['ai', 'human'] : game.networkOnly ? ['network', 'chatgpt'] : ['ai', 'chatgpt', 'human'];
     const mode = allowedModes.includes(localMode) ? localMode : allowedModes[0];
     const defaults = game.newGameDefaults[mode];
     const difficulty = gameOptions[mode]?.difficulty ?? defaults.difficulty;
@@ -74,7 +74,7 @@ export function App() {
                 <div className="player-row">
                     <div className="player-info"><span className="avatar dark">{visibleWhite ? '♚' : '♔'}</span>
                         <div>
-                            <strong>{game.mode === 'chatgpt' ? 'ChatGPT' : game.mode === 'ai' ? 'Локальный ИИ' : 'Соперник'}</strong><small>{visibleWhite ? 'Чёрные' : 'Белые'}{game.mode === 'ai' ? ` · ${difficultyLabels[game.difficulty]}` : ''}</small>
+                            <strong>{game.mode === 'chatgpt' ? 'ChatGPT' : game.mode === 'ai' ? (game.offlineApp ? 'Компьютер' : 'Локальный ИИ') : 'Соперник'}</strong><small>{visibleWhite ? 'Чёрные' : 'Белые'}{game.mode === 'ai' ? ` · ${difficultyLabels[game.difficulty]}` : ''}</small>
                         </div>
                     </div>
                     <div className="enemy-hand" title={`${game.enemyCards} скрытых карт`}><Icon type="deck"/><span>{game.enemyCards}</span></div>
@@ -121,7 +121,7 @@ export function App() {
         {modal && <div className="overlay" onClick={closeModal}>
             <div className={`dialog ${modal === 'rules' ? 'rules-dialog' : ''}`} onClick={e => e.stopPropagation()}>
                 <button className="close" onClick={closeModal} aria-label="Закрыть">×</button>
-                {modal === 'new' ? <NewGameForm mode={mode} difficulty={difficulty} busy={busy} networkOnly={game.networkOnly}
+                {modal === 'new' ? <NewGameForm mode={mode} difficulty={difficulty} busy={busy} networkOnly={game.networkOnly} offlineApp={game.offlineApp}
                     apiKeyEntry={game.apiKeyEntry} apiKey={apiKey} setApiKey={setApiKey} openAiConfigured={game.openAiConfigured} apiKeyInputSupported={supportsApiKeyInput(game)} error={error}
                     setMode={setMode} setDifficulty={setDifficulty} onStart={async () => {
                     const started = await act('new', { mode, difficulty, ...(supportsApiKeyInput(game) && mode === 'chatgpt' && apiKey.trim() ? { apiKey: apiKey.trim() } : {}) });

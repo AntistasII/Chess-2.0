@@ -5,6 +5,7 @@ type Props = {
     difficulty: string;
     busy: boolean;
     networkOnly?: boolean;
+    offlineApp?: boolean;
     apiKey?: string;
     apiKeyEntry?: boolean;
     openAiConfigured?: boolean;
@@ -21,15 +22,18 @@ const modes = [
     { id: 'human', icon: '♙', name: 'Вдвоём', description: 'Два игрока на одном устройстве' },
 ];
 
-export function NewGameForm({ mode, difficulty, busy, networkOnly = false, apiKey = '', apiKeyEntry, openAiConfigured = false, apiKeyInputSupported = true,
+export function NewGameForm({ mode, difficulty, busy, networkOnly = false, offlineApp = false, apiKey = '', apiKeyEntry, openAiConfigured = false, apiKeyInputSupported = true,
     error, setMode, setDifficulty, setApiKey, onStart }: Props) {
-    const keyEntry = apiKeyEntry ?? networkOnly;
+    const keyEntry = !offlineApp && (apiKeyEntry ?? networkOnly);
     return <form className="new-game-form" onSubmit={event => { event.preventDefault(); void onStart(); }}>
         <span className="new-game-eyebrow">НОВАЯ ПАРТИЯ</span>
         <h2>С кем играем?</h2>
         <fieldset className="mode-options" disabled={busy}>
             <legend className="visually-hidden">Выберите соперника</legend>
-            {(networkOnly ? [
+            {(offlineApp ? [
+                { id: 'ai', icon: '♞', name: 'С компьютером', description: 'Три уровня сложности' },
+                { id: 'human', icon: '♙', name: 'С другом', description: 'Вдвоём на одном устройстве' },
+            ] : networkOnly ? [
                 { id: 'network', icon: '♙', name: 'С другом по сети', description: 'Каждый входит по своему коду и видит только свои карты' },
                 modes[1],
             ] : modes).map(option => <label key={option.id} className={`mode-option ${mode === option.id ? 'is-active' : ''}`}>
@@ -53,7 +57,7 @@ export function NewGameForm({ mode, difficulty, busy, networkOnly = false, apiKe
             {!apiKeyInputSupported && <p className="new-game-error" role="alert">Не удалось подключить ChatGPT. Обновите страницу и попробуйте ещё раз.</p>}
             <p className="new-game-note">Для игры нужен ключ ChatGPT. Использование оплачивается отдельно.</p>
         </div>}
-        {!keyEntry && mode === 'chatgpt' && !openAiConfigured && <p className="new-game-note">ChatGPT пока недоступен. Выберите другого соперника.</p>}
+        {!offlineApp && !keyEntry && mode === 'chatgpt' && !openAiConfigured && <p className="new-game-note">ChatGPT пока недоступен. Выберите другого соперника.</p>}
         <p className="new-game-note">Начинаем без карт. Взять или применить карту можно вместо хода.</p>
         {error && <p className="new-game-error" role="alert">{error}</p>}
         <button type="submit" className="primary new-game-start" disabled={busy || (keyEntry && mode === 'chatgpt' && (!apiKeyInputSupported || ((networkOnly || !openAiConfigured) && !apiKey.trim())))}>

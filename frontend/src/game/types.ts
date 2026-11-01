@@ -44,6 +44,7 @@ export type State = {
     opponentRetryLimit: number;
     defaultMode: string;
     networkOnly?: boolean;
+    offlineApp?: boolean;
     openAiConfigured?: boolean;
     apiKeyInputSupported?: boolean;
     apiKeyEntry?: boolean;

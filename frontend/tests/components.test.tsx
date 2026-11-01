@@ -241,3 +241,14 @@ assert.match(androidChatForm, /type="password"/);
 assert.match(androidChatForm, /Новый ключ \(необязательно\)/);
 assert.doesNotMatch(androidChatForm, /required|пока недоступен/);
 console.log('Android key form passed: entry enabled locally, saved key can be reused.');
+
+for (const mode of ['ai', 'human']) {
+  const mobileForm = renderToStaticMarkup(<NewGameForm mode={mode} difficulty="normal" offlineApp busy={false}
+    setMode={() => {}} setApiKey={() => {}} setDifficulty={() => {}} onStart={async () => {}}/>);
+  assert.equal((mobileForm.match(/type="radio"/g) ?? []).length, 2);
+  assert.match(mobileForm, /С компьютером/);
+  assert.match(mobileForm, /С другом/);
+  assert.doesNotMatch(mobileForm, /ChatGPT|type="password"|С другом по сети/);
+  assert.equal((mobileForm.match(/<option /g) ?? []).length, mode === 'ai' ? 3 : 0);
+}
+console.log('Offline mobile modes passed: computer with three levels, friend on one device, no key entry.');

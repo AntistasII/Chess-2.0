@@ -22,7 +22,9 @@ class BishopRetreatTest {
         assertFalse(allowed.contains("move:38:31:"), "Bh4 loses the bishop to the knight");
         assertTrue(review.depth() >= 1);
         assertTrue(review.scores().get("move:38:29:") > review.scores().get("move:38:47:"));
-        assertFalse(review.competitiveActions().contains("move:38:47:"));
+        // Пассивное отступление заметно уступает лучшему варианту.
+        assertTrue(review.scores().get("move:38:47:") <= review.scores().get(review.actionId()) - 50,
+                review.depth() + " " + review.actionId() + " " + review.scores());
         assertNotEquals("move:38:47:",TestSessions.ai().choose(game));
     }
 }

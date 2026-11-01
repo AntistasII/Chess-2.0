@@ -14,16 +14,16 @@ chess:
     search:
       easy:
         depth: 2
-        nodes: 250
+        nodes: 3000
         milliseconds: 500
       normal:
-        depth: 4
-        nodes: 1400
+        depth: 6
+        nodes: 60000
         milliseconds: 1500
       hard:
-        depth: 5
-        nodes: 4500
-        milliseconds: 3000
+        depth: 9
+        nodes: 250000
+        milliseconds: 3500
     opponents:
       ai:
         hand-limit: 3

@@ -70,9 +70,8 @@ public final class Board implements Iterable<Piece> {
     public Board copy() {
         Board copy = new Board(width(), height());
         copy.geometry = geometry;
-        copy.cells = Arrays.stream(cells)
-                .map(piece -> piece == null ? null : piece.copy())
-                .toArray(Piece[]::new);
+        Piece[] source = cells, target = copy.cells;
+        for (int i = 0; i < source.length; i++) if (source[i] != null) target[i] = source[i].copy();
         return copy;
     }
 

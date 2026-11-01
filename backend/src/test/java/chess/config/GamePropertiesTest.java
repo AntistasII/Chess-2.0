@@ -89,8 +89,8 @@ class GamePropertiesTest {
                 "chess.game.search.normal.nodes", 800,
                 "chess.game.search.normal.milliseconds", 700));
         assertEquals(new GameProperties.SearchLimits(3, 800, 700), properties.searchFor("normal"));
-        assertEquals(new GameProperties.SearchLimits(2, 250, 500), properties.searchFor("easy"));
-        assertEquals(new GameProperties.SearchLimits(5, 4500, 3000), properties.searchFor("hard"));
+        assertEquals(new GameProperties.SearchLimits(2, 3000, 500), properties.searchFor("easy"));
+        assertEquals(new GameProperties.SearchLimits(9, 250000, 3500), properties.searchFor("hard"));
         assertThrows(IllegalArgumentException.class, () -> properties.searchFor("missing"));
     }
 

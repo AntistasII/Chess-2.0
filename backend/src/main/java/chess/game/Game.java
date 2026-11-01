@@ -22,7 +22,10 @@ public final class Game {
     List<Card> whiteHand = new ArrayList<>(), blackHand = new ArrayList<>(), deck = new ArrayList<>(), discard = new ArrayList<>();
     List<Piece> captured = new ArrayList<>();
     List<String> history = new ArrayList<>();
-    String gameId = UUID.randomUUID().toString();
+    // Копии поиска наследуют идентификатор: SecureRandom не вызывается на каждый узел.
+    String gameId;
+    // Копия поиска: снимок отмены нужен, только если у следующего игрока есть «Отмена хода».
+    boolean simulation;
     Map<String, Integer> repetitions = new HashMap<>();
     // ply считает действия обеих сторон; version защищает от устаревших команд клиента.
     boolean whiteTurn = true;
@@ -54,6 +57,7 @@ public final class Game {
         this.mode = mode;
         this.handLimit = handLimit;
         this.difficulty = difficulty;
+        this.gameId = UUID.randomUUID().toString();
     }
 
     private void initializeBoard(String backRank) {
@@ -73,6 +77,7 @@ public final class Game {
         squareEffects = new HashMap<>(source.squareEffects);
         lastMove = source.lastMove; // Снимок неизменяемый; restore всегда копирует его содержимое.
         gameId = source.gameId;
+        simulation = source.simulation;
         // Карты неизменяемы: достаточно копировать списки, сами экземпляры можно разделять.
         whiteHand = new ArrayList<>(source.whiteHand);
         blackHand = new ArrayList<>(source.blackHand);
@@ -182,8 +187,25 @@ public final class Game {
      */
     public Game simulate(Action action) {
         Game next = copy();
+        next.simulation = true;
         next.applyUnchecked(action);
         return next;
+    }
+
+    /** Допустимое действие вместе с уже рассчитанной позицией после него. */
+    public record Transition(Action action, Game next) {}
+
+    /**
+     * То же, что legalActions, но возвращает и проверенные позиции: поиску не нужно
+     * повторно копировать партию для каждого хода.
+     */
+    public List<Transition> legalTransitions() {
+        return new TurnRules(this).legalTransitions(action -> true);
+    }
+
+    /** Только допустимые действия, прошедшие фильтр; фильтр проверяется до расчёта позиции. */
+    public List<Transition> legalTransitions(java.util.function.Predicate<Action> filter) {
+        return new TurnRules(this).legalTransitions(filter);
     }
 
     /**
