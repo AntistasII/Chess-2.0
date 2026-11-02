@@ -22,7 +22,7 @@ public final class Ai implements MoveSelector {
     /** Та же проверка поиска используется как советник ChatGPT без подмены его ответа. */
     public SearchResult analyze(Game game, Set<String> allowed) {
         Game position = game.observationForCurrentPlayer();
-        var limits = properties.searchFor(game.difficulty());
+        var limits = properties.searchFor(game.difficulty().id());
         if (EndgameConversion.active(position, position.whiteTurn())) {
             var matingSearch = new MatingSearch(limits);
             var mate = matingSearch.find(position, allowed);

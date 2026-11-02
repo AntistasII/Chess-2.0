@@ -1,5 +1,7 @@
 package chess.ai;
 
+import chess.game.Action;
+import chess.game.Difficulty;
 import chess.game.Game;
 import chess.game.MoveSelector;
 import chess.config.GameProperties;
@@ -24,7 +26,7 @@ public final class Ai implements MoveSelector {
         Game observation = game.observationForCurrentPlayer();
         var hints = TacticalHints.forPosition(observation);
         var allowed = TacticalHints.saferActionIds(observation, hints);
-        if (CardDrawPolicy.shouldDraw(observation, hints, allowed)) return "draw";
+        if (CardDrawPolicy.shouldDraw(observation, hints, allowed)) return Action.DRAW_ID;
         double variety = variety(game.difficulty());
         var result = analyze(observation, allowed, variety);
         return varied(result, variety);
@@ -37,7 +39,7 @@ public final class Ai implements MoveSelector {
 
     private SearchResult analyze(Game game, Set<String> allowed, double rootMargin) {
         Game position = game.observationForCurrentPlayer();
-        var limits = properties.searchFor(game.difficulty());
+        var limits = properties.searchFor(game.difficulty().id());
         if (EndgameConversion.active(position, position.whiteTurn())) {
             var matingSearch = new MatingSearch(limits);
             var mate = matingSearch.find(position, allowed);
@@ -82,11 +84,11 @@ public final class Ai implements MoveSelector {
     }
 
     /** Допуск разнообразия в сотых пешки: на лёгком уровне ИИ чаще выбирает «человеческие» ходы. */
-    static double variety(String difficulty) {
+    static double variety(Difficulty difficulty) {
         return switch (difficulty) {
-            case "easy" -> 45;
-            case "hard" -> 6;
-            default -> 14;
+            case EASY -> 45;
+            case NORMAL -> 14;
+            case HARD -> 6;
         };
     }
 }

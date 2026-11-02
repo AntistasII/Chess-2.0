@@ -1,6 +1,7 @@
 package chess.opponent;
 
 import chess.game.Game;
+import chess.game.GameMode;
 import chess.game.MoveSelector;
 
 import java.util.Objects;
@@ -16,8 +17,8 @@ public final class LocalAiOpponent extends Opponent {
     }
 
     @Override
-    public String mode() {
-        return "ai";
+    public GameMode mode() {
+        return GameMode.AI;
     }
 
     @Override

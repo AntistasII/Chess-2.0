@@ -1,6 +1,13 @@
 import { Icon } from './Icon';
 import { names, descriptions } from '../game/catalog';
 import type { CardType } from '../game/types';
+/** «22 типа», «25 типов», «21 тип». */
+function typesLabel(count: number): string {
+    const tens = count % 100, ones = count % 10;
+    const word = tens >= 11 && tens <= 14 ? 'типов' : ones === 1 ? 'тип' : ones >= 2 && ones <= 4 ? 'типа' : 'типов';
+    return `${count} ${word}`;
+}
+
 export function GameRules() {
     return <><h2>Правила игры</h2><p>Обычные шахматы с картами. За ход можно сделать <strong>одно
                     действие</strong>: сходить фигурой, взять карту или применить сохранённую.</p><p>При шахе добор
@@ -13,7 +20,7 @@ export function GameRules() {
                     тройного шага не применяется. Любое действие противника завершает это окно.</p><p>Колода общая.
                     Использованные карты возвращаются в колоду после её исчерпания; карты из руки сбрасывать нельзя.</p>
                     <details>
-                        <summary>Все карты · {Object.keys(names).length} типа</summary>
+                        <summary>Все карты · {typesLabel(Object.keys(names).length)}</summary>
                         <div className="catalog">{(Object.keys(names) as CardType[]).map(type => <div key={type}><Icon type={type}/>
                             <div><strong>{names[type]}</strong><p>{descriptions[type]}</p></div>
                         </div>)}</div>

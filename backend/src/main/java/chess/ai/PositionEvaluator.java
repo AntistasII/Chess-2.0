@@ -1,5 +1,6 @@
 package chess.ai;
 
+import chess.pieces.PieceType;
 import chess.board.Geometry;
 import chess.game.Game;
 import chess.pieces.Piece;
@@ -11,6 +12,9 @@ import chess.pieces.Piece;
  * к окончанию по оставшемуся материалу.
  */
 final class PositionEvaluator {
+    /** Ценность одного места в руке; разница вместимости рук после «Инфляции» и «Шринкфляции». */
+    static final int HAND_SLOT = 40;
+
     private PositionEvaluator() {}
 
     private static final int[][] KNIGHT = {{1, 2}, {2, 1}, {2, -1}, {1, -2}, {-1, -2}, {-2, -1}, {-2, 1}, {-1, 2}};
@@ -22,13 +26,13 @@ final class PositionEvaluator {
     /** Начальный материал фигур (без пешек) обеих сторон: 2 × (2N + 2B + 2R + Q). */
     private static final double OPENING_PIECES = 6420;
 
-    static int materialValue(char type) {
+    static int materialValue(PieceType type) {
         return switch (type) {
-            case 'P' -> 100;
-            case 'N' -> 320;
-            case 'B' -> 335;
-            case 'R' -> 500;
-            case 'Q' -> 900;
+            case PAWN -> 100;
+            case KNIGHT -> 320;
+            case BISHOP -> 335;
+            case ROOK -> 500;
+            case QUEEN -> 900;
             default -> 0;
         };
     }
@@ -47,11 +51,11 @@ final class PositionEvaluator {
             Piece p = g.pieceAt(s);
             cells[s] = p;
             if (p == null) continue;
-            char type = p.type();
-            if (type == 'P') (p.white() ? whitePawnFiles : blackPawnFiles)[board.file(s)]++;
-            else if (type == 'K') { if (p.white()) whiteKing = s; else blackKing = s; }
+            PieceType type = p.type();
+            if (type == PieceType.PAWN) (p.white() ? whitePawnFiles : blackPawnFiles)[board.file(s)]++;
+            else if (type == PieceType.KING) { if (p.white()) whiteKing = s; else blackKing = s; }
             else piecesMaterial += materialValue(type);
-            if (type == 'B') { if (p.white()) whiteBishops++; else blackBishops++; }
+            if (type == PieceType.BISHOP) { if (p.white()) whiteBishops++; else blackBishops++; }
         }
         double mg = Math.min(1, piecesMaterial / OPENING_PIECES), eg = 1 - mg;
         int[] mobility = new int[size];
@@ -86,7 +90,7 @@ final class PositionEvaluator {
             double center = 7 - Math.abs((width - 1) / 2.0 - file) * 7 / Math.max(1, width - 1)
                     - Math.abs((height - 1) / 2.0 - rank) * 7 / Math.max(1, height - 1);
             switch (p.type()) {
-                case 'P' -> {
+                case PAWN -> {
                     value += advancement * 9;
                     // Центральные пешки занимают центр в дебюте; фланговые без нужды не двигаем.
                     if (relFile == 3 || relFile == 4) value += mg * (relRank >= 3 && relRank <= 4 ? 14 : relRank == 1 ? -8 : 0);
@@ -103,33 +107,33 @@ final class PositionEvaluator {
                         value += bonus;
                     }
                 }
-                case 'N' -> {
+                case KNIGHT -> {
                     value += center * 7;
                     if (!p.frozen() && !p.astral()) value += knightExits(cells, board, s, white, enemy) + 3 * (mobility[s] - 4);
                     if (relRank == 0 && !p.moved()) value -= 16 * mg;
                 }
-                case 'B' -> {
+                case BISHOP -> {
                     value += center * 7 + 3 * (mobility[s] - 6);
                     if (relRank == 0 && !p.moved()) value -= 14 * mg;
                 }
-                case 'R' -> {
+                case ROOK -> {
                     value += 2 * (mobility[s] - 6);
                     int[] ownFiles = white ? whitePawnFiles : blackPawnFiles, enemyFiles = white ? blackPawnFiles : whitePawnFiles;
                     if (ownFiles[file] == 0) value += enemyFiles[file] == 0 ? 22 : 11;
                     if (relRank == 6) value += 16;
                 }
-                case 'Q' -> {
+                case QUEEN -> {
                     value += mobility[s] - 10;
                     // Ранний выход ферзя до развития лёгких фигур — лёгкая мишень.
                     if (p.moved() && undeveloped(cells, board, white) >= 2) value -= 22 * mg;
                 }
-                case 'K' -> {
+                case KING -> {
                     // Укрытие пешками полезно при наличии тяжёлых фигур у противника.
                     for (int df = -1; df <= 1; df++) {
                         int r = rank + (white ? 1 : -1), f = file + df;
                         if (!board.inside(r, f)) continue;
                         Piece shelter = cells[board.index(r, f)];
-                        if (shelter != null && shelter.white() == white && shelter.type() == 'P') value += 10;
+                        if (shelter != null && shelter.white() == white && shelter.type() == PieceType.PAWN) value += 10;
                     }
                     value += KingSafety.evaluate(g, p, s);
                     // Давление на клетки вокруг короля, пока у противника есть ферзь или ладьи.
@@ -144,12 +148,12 @@ final class PositionEvaluator {
                 }
                 default -> {}
             }
-            if (p.boost()) value += p.type() == 'K' ? 15 : 22;
+            if (p.boost()) value += p.type() == PieceType.KING ? 15 : 22;
             if (p.shield()) value += 18;
             if (p.frozen()) value -= value * .18;
             if (p.astral()) value -= value * .25;
             // Не оставляем фигуры под бесплатным взятием, даже на границе глубины поиска.
-            if (p.type() != 'K' && !p.astral() && enemy[s] > 0) {
+            if (p.type() != PieceType.KING && !p.astral() && enemy[s] > 0) {
                 boolean defended = own[s] > 0;
                 double base = materialValue(p.type());
                 double penalty = base * (defended ? .06 : .45);
@@ -184,15 +188,19 @@ final class PositionEvaluator {
                     case SHIELD -> 28;
                     case PAWN_BOOST -> 25;
                     case KING_BOOST -> 18;
-                    case REVIVE_PAWN -> g.capturedPieces().stream().anyMatch(p -> p.white() == white && p.type() == 'P') ? 65 : 12;
+                    case REVIVE_PAWN -> g.capturedPieces().stream().anyMatch(p -> p.white() == white && p.type() == PieceType.PAWN) ? 65 : 12;
                     case REVIVE_PIECE ->
-                            g.capturedPieces().stream().filter(p -> p.white() == white && p.type() != 'P').mapToInt(p -> p.type() == 'Q' ? 350 : p.type() == 'R' ? 230 : 140).max().orElse(12);
+                            g.capturedPieces().stream().filter(p -> p.white() == white && p.type() != PieceType.PAWN).mapToInt(p -> p.type() == PieceType.QUEEN ? 350 : p.type() == PieceType.ROOK ? 230 : 140).max().orElse(12);
                     case CLEANSE -> 30;
                     case SWAP -> 38;
                     case SCOUT -> 10;
                     case EXCHANGE -> 15;
+                    case TRANSFORM -> 20;
+                    case INFLATION, SHRINKFLATION -> 25;
                     default -> 45;
                 };
+            // Место в руке стоит примерно как карта, которую можно будет набрать.
+            handValue += g.handLimit(white) * HAND_SLOT;
             score += (white == side ? 1 : -1) * handValue;
         }
         score += EndgameConversion.evaluate(g, side) - EndgameConversion.evaluate(g, !side);
@@ -204,17 +212,17 @@ final class PositionEvaluator {
     /** Отмечает атакованные клетки и возвращает число доступных фигуре клеток. */
     private static int markAttacks(Piece[] cells, Geometry board, Piece p, int s, int[] attacks, int[] least) {
         int rank = board.rank(s), file = board.file(s), reach = 0;
-        int value = p.type() == 'K' ? 2000 : materialValue(p.type());
+        int value = p.type() == PieceType.KING ? 2000 : materialValue(p.type());
         switch (p.type()) {
-            case 'P' -> {
+            case PAWN -> {
                 int r = rank + (p.white() ? 1 : -1);
                 for (int df : new int[]{-1, 1}) if (board.inside(r, file + df)) mark(board.index(r, file + df), value, attacks, least);
             }
-            case 'N' -> reach = jumps(cells, board, p, rank, file, KNIGHT, value, attacks, least);
-            case 'K' -> jumps(cells, board, p, rank, file, KING, value, attacks, least);
-            case 'B' -> reach = rays(cells, board, p, rank, file, DIAGONAL, value, attacks, least);
-            case 'R' -> reach = rays(cells, board, p, rank, file, STRAIGHT, value, attacks, least);
-            case 'Q' -> reach = rays(cells, board, p, rank, file, DIAGONAL, value, attacks, least)
+            case KNIGHT -> reach = jumps(cells, board, p, rank, file, KNIGHT, value, attacks, least);
+            case KING -> jumps(cells, board, p, rank, file, KING, value, attacks, least);
+            case BISHOP -> reach = rays(cells, board, p, rank, file, DIAGONAL, value, attacks, least);
+            case ROOK -> reach = rays(cells, board, p, rank, file, STRAIGHT, value, attacks, least);
+            case QUEEN -> reach = rays(cells, board, p, rank, file, DIAGONAL, value, attacks, least)
                     + rays(cells, board, p, rank, file, STRAIGHT, value, attacks, least);
             default -> {}
         }
@@ -263,7 +271,7 @@ final class PositionEvaluator {
             for (int f = file - 1; f <= file + 1; f++) {
                 if (!board.inside(r, f)) continue;
                 Piece q = cells[board.index(r, f)];
-                if (q != null && q.type() == 'P' && q.white() != white) return false;
+                if (q != null && q.type() == PieceType.PAWN && q.white() != white) return false;
             }
         return true;
     }
@@ -289,7 +297,7 @@ final class PositionEvaluator {
         for (int f = 0; f < board.width(); f++) {
             if (!board.inside(home, f)) continue;
             Piece q = cells[board.index(home, f)];
-            if (q != null && q.white() == white && (q.type() == 'N' || q.type() == 'B') && !q.moved()) count++;
+            if (q != null && q.white() == white && (q.type() == PieceType.KNIGHT || q.type() == PieceType.BISHOP) && !q.moved()) count++;
         }
         return count;
     }

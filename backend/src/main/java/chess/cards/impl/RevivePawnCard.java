@@ -1,5 +1,6 @@
 package chess.cards.impl;
 
+import chess.pieces.PieceType;
 import chess.cards.CardType;
 import chess.cards.CardDefinition;
 import chess.cards.ReviveCard;
@@ -11,7 +12,7 @@ public final class RevivePawnCard extends ReviveCard {
     }
 
     @Override
-    protected boolean accepts(char type) {
-        return type == 'P';
+    protected boolean accepts(PieceType type) {
+        return type == PieceType.PAWN;
     }
 }

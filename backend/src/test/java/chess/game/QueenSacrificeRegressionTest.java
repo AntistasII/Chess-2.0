@@ -11,8 +11,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class QueenSacrificeRegressionTest {
     private Game beforeAction60() {
         Game game = RulesTest.empty();
-        game.board.clear();
-        game.whiteTurn = false;
+        game.board().clear();
+        game.setWhiteTurn(false);
         String[] ranks = {"..R..RK.", "....PPBP", "......P.", "PQ.....N",
                 "....n.B.", "........", ".pqppppp", "rnb..rk."};
         Set<Integer> unmoved = Set.of(12, 13, 15, 49, 51, 52, 53, 54, 55, 56, 58);
@@ -24,25 +24,25 @@ class QueenSacrificeRegressionTest {
                 int square = rank * 8 + file;
                 var piece = PieceFactory.create(id++, Character.toUpperCase(code), Character.isUpperCase(code));
                 if (!unmoved.contains(square)) piece.markMoved();
-                game.board.set(square, piece);
+                game.board().set(square, piece);
             }
         RulesTest.card(game, CardType.SHIELD);
-        game.whiteTurn = true;
+        game.setWhiteTurn(true);
         RulesTest.card(game, CardType.REVIVE_PIECE);
         RulesTest.card(game, CardType.KING_BOOST);
         RulesTest.card(game, CardType.PAWN_BOOST);
-        game.whiteTurn = false;
+        game.setWhiteTurn(false);
         return game.observationForCurrentPlayer();
     }
 
     @Test void filtersQueenForRookAndIdentifiesActualRecapture() {
         Game game = beforeAction60();
         var hints = TacticalHints.forPosition(game);
-        var sacrifice = hints.stream().filter(h -> h.get("actionId").equals("move:50:2:")).findFirst().orElseThrow();
-        assertEquals(500, sacrifice.get("immediateMaterialDelta"));
-        assertEquals(-400, sacrifice.get("worstMaterialDeltaAfterOneReply"));
-        assertEquals("move:5:2:", sacrifice.get("dangerousReplyId"));
-        assertEquals(-400, sacrifice.get("worstMaterialDeltaAfterRecapture"));
+        var sacrifice = hints.stream().filter(h -> h.actionId().equals("move:50:2:")).findFirst().orElseThrow();
+        assertEquals(500, sacrifice.immediateMaterialDelta());
+        assertEquals(-400, sacrifice.worstMaterialDeltaAfterOneReply());
+        assertEquals("move:5:2:", sacrifice.dangerousReplyId());
+        assertEquals(-400, sacrifice.worstMaterialDeltaAfterRecapture());
         var safe = TacticalHints.saferActionIds(hints);
         assertFalse(safe.isEmpty());
         assertFalse(safe.contains("move:50:2:"));
@@ -69,8 +69,8 @@ class QueenSacrificeRegressionTest {
         game = game.simulate(game.legalActions().stream().filter(a -> a.id().equals("move:49:33:")).findFirst().orElseThrow());
         game = game.simulate(game.legalActions().stream().filter(a -> a.id().equals("move:38:52:")).findFirst().orElseThrow());
         var hints = TacticalHints.forPosition(game);
-        var pawnCapture = hints.stream().filter(h -> h.get("actionId").equals("move:33:24:")).findFirst().orElseThrow();
-        assertEquals(-400, pawnCapture.get("worstMaterialDeltaAfterRecapture"));
+        var pawnCapture = hints.stream().filter(h -> h.actionId().equals("move:33:24:")).findFirst().orElseThrow();
+        assertEquals(-400, pawnCapture.worstMaterialDeltaAfterRecapture());
         assertFalse(TacticalHints.saferActionIds(hints).contains("move:33:24:"), "b5xa4 leaves rook f8 to Bxf8");
     }
 }

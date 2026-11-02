@@ -1,5 +1,7 @@
 package chess.opponent;
 
+import chess.game.GameMode;
+
 import chess.game.Game;
 import chess.game.GameSession;
 import org.junit.jupiter.api.Test;
@@ -23,16 +25,16 @@ class OpponentTest {
         });
         var local = new LocalAiOpponent(game -> "draw");
         var registry = new OpponentRegistry(local, chatGpt);
-        assertSame(local, registry.forMode("ai"));
-        assertSame(chatGpt, registry.forMode("chatgpt"));
-        assertInstanceOf(NetworkOpponent.class, registry.forMode("network"));
-        assertInstanceOf(HumanOpponent.class, registry.forMode("human"));
+        assertSame(local, registry.forMode(GameMode.AI));
+        assertSame(chatGpt, registry.forMode(GameMode.CHATGPT));
+        assertInstanceOf(NetworkOpponent.class, registry.forMode(GameMode.NETWORK));
+        assertInstanceOf(HumanOpponent.class, registry.forMode(GameMode.HUMAN));
         assertTrue(local.automatic());
         assertFalse(local.requiresScoutPreview());
         assertTrue(chatGpt.automatic());
         assertTrue(chatGpt.requiresScoutPreview());
         assertEquals("draw", local.choose(chess.game.TestSessions.game("ai", 3, "normal")));
-        assertThrows(IllegalArgumentException.class, () -> registry.forMode("missing"));
+        assertThrows(IllegalArgumentException.class, () -> GameMode.fromId("missing"));
     }
 
     @Test void manualOpponentsNeverGenerateAutomaticMoves() {
@@ -44,7 +46,7 @@ class OpponentTest {
             assertFalse(opponent.automatic());
             assertFalse(opponent.requiresScoutPreview());
             assertThrows(IllegalArgumentException.class,
-                    () -> opponent.choose(chess.game.TestSessions.game(opponent.mode(), 3, "normal")));
+                    () -> opponent.choose(chess.game.TestSessions.game(opponent.mode().id(), 3, "normal")));
         }
     }
 }

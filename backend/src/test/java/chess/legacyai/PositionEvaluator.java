@@ -7,13 +7,13 @@ import chess.game.Game;
 final class PositionEvaluator {
     private PositionEvaluator() {}
 
-    static int materialValue(char type) {
+    static int materialValue(chess.pieces.PieceType type) {
         return switch (type) {
-            case 'P' -> 100;
-            case 'N' -> 320;
-            case 'B' -> 335;
-            case 'R' -> 500;
-            case 'Q' -> 900;
+            case PAWN -> 100;
+            case KNIGHT -> 320;
+            case BISHOP -> 335;
+            case ROOK -> 500;
+            case QUEEN -> 900;
             default -> 0;
         };
     }
@@ -30,28 +30,28 @@ final class PositionEvaluator {
             // Нормализация сохраняет прежнюю оценку на 8×8 и работает на прямоугольнике.
             double center = 7 - Math.abs((board.width() - 1) / 2.0 - board.file(s)) * 7 / Math.max(1, board.width() - 1)
                     - Math.abs((board.height() - 1) / 2.0 - board.rank(s)) * 7 / Math.max(1, board.height() - 1);
-            if (p.type() == 'P') value += advancement * 9;
-            if (p.type() == 'N' && !p.frozen() && !p.astral()) value += KnightMobility.evaluate(g, s);
-            if (p.type() == 'N' || p.type() == 'B') value += center * 7;
-            if (p.boost()) value += p.type() == 'K' ? 15 : 22;
+            if (p.type() == chess.pieces.PieceType.PAWN) value += advancement * 9;
+            if (p.type() == chess.pieces.PieceType.KNIGHT && !p.frozen() && !p.astral()) value += KnightMobility.evaluate(g, s);
+            if (p.type() == chess.pieces.PieceType.KNIGHT || p.type() == chess.pieces.PieceType.BISHOP) value += center * 7;
+            if (p.boost()) value += p.type() == chess.pieces.PieceType.KING ? 15 : 22;
             if (p.shield()) value += 18;
             if (p.frozen()) value -= value * .18;
             if (p.astral()) value -= value * .25;
             // Не оставляем фигуры под бесплатным взятием, даже на границе глубины поиска.
-            if (p.type() != 'K' && !p.astral() && g.isSquareAttacked(s, !p.white())) {
+            if (p.type() != chess.pieces.PieceType.KING && !p.astral() && g.isSquareAttacked(s, !p.white())) {
                 boolean defended = g.isSquareAttacked(s, p.white());
                 value -= materialValue(p.type()) * (defended ? .06 : .45);
             }
-            if (p.type() == 'K') {
+            if (p.type() == chess.pieces.PieceType.KING) {
                 // Укрытие пешками полезно при наличии тяжёлых фигур у противника.
                 for (int df = -1; df <= 1; df++) {
                     int rank = board.rank(s) + (p.white() ? 1 : -1), file = board.file(s) + df;
                     if (!board.inside(rank, file)) continue;
                     var shelter = g.pieceAt(board.index(rank, file));
-                    if (shelter != null && shelter.white() == p.white() && shelter.type() == 'P') value += 10;
+                    if (shelter != null && shelter.white() == p.white() && shelter.type() == chess.pieces.PieceType.PAWN) value += 10;
                 }
             }
-            if (p.type() == 'K') value += KingSafety.evaluate(g, p, s);
+            if (p.type() == chess.pieces.PieceType.KING) value += KingSafety.evaluate(g, p, s);
             score += (p.white() == side ? 1 : -1) * value;
         }
         for (boolean white : new boolean[]{true, false}) {
@@ -70,9 +70,9 @@ final class PositionEvaluator {
                     case SHIELD -> 28;
                     case PAWN_BOOST -> 25;
                     case KING_BOOST -> 18;
-                    case REVIVE_PAWN -> g.capturedPieces().stream().anyMatch(p -> p.white() == white && p.type() == 'P') ? 65 : 12;
+                    case REVIVE_PAWN -> g.capturedPieces().stream().anyMatch(p -> p.white() == white && p.type() == chess.pieces.PieceType.PAWN) ? 65 : 12;
                     case REVIVE_PIECE ->
-                            g.capturedPieces().stream().filter(p -> p.white() == white && p.type() != 'P').mapToInt(p -> p.type() == 'Q' ? 350 : p.type() == 'R' ? 230 : 140).max().orElse(12);
+                            g.capturedPieces().stream().filter(p -> p.white() == white && p.type() != chess.pieces.PieceType.PAWN).mapToInt(p -> p.type() == chess.pieces.PieceType.QUEEN ? 350 : p.type() == chess.pieces.PieceType.ROOK ? 230 : 140).max().orElse(12);
                     case CLEANSE -> 30;
                     case SWAP -> 38;
                     case SCOUT -> 10;

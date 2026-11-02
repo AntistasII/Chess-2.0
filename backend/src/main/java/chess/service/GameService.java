@@ -1,5 +1,6 @@
 package chess.service;
 
+import chess.game.GameMode;
 import chess.game.GameSession;
 import chess.config.OpenAiProperties;
 import chess.model.*;
@@ -55,11 +56,12 @@ public final class GameService {
         if (!request.isPost()) throw notFound();
 
         if (request.operation() == GameOperation.NEW_GAME) {
-            String mode = request.text("mode", networkOnly ? "network" : null);
-            if (networkOnly && !Set.of("network", "chatgpt").contains(mode))
+            String mode = request.text("mode", networkOnly ? GameMode.NETWORK.id() : null);
+            GameMode requested = mode == null ? null : GameMode.fromId(mode);
+            if (networkOnly && requested != GameMode.NETWORK && requested != GameMode.CHATGPT)
                 throw new IllegalArgumentException("В Railway доступны игра с другом и ChatGPT");
             String key = networkOnly ? request.text("apiKey", null) : null;
-            if (networkOnly && "chatgpt".equals(mode) && (key == null || key.isBlank()))
+            if (networkOnly && requested == GameMode.CHATGPT && (key == null || key.isBlank()))
                 throw new IllegalArgumentException("Для игры с ChatGPT в Railway введите API-ключ OpenAI");
             session.newGame(mode, request.optionalInteger("handLimit"), request.text("difficulty", null),
                     key);
@@ -67,7 +69,7 @@ public final class GameService {
         }
         if (request.operation() == GameOperation.RESET) {
             session.requireVersion(request.version());
-            if (networkOnly) session.newGame("network", null, null);
+            if (networkOnly) session.newGame(GameMode.NETWORK.id(), null, null);
             else session.reset();
             return new ApiResponse(OK, access.reset());
         }
@@ -107,10 +109,10 @@ public final class GameService {
     private Map<String, Object> withRequestSettings(Map<String, Object> state) {
         // Клиент получает только политику повторов, без ключа и остальных секретов.
         state.put("networkOnly", networkOnly);
-        if (networkOnly) state.put("defaultMode", "network");
+        if (networkOnly) state.put("defaultMode", GameMode.NETWORK.id());
         state.put("openAiConfigured", session.chatGptConfigured());
         state.put("apiKeyInputSupported", networkOnly);
-        state.put("opponentRetryLimit", openAi != null && "chatgpt".equals(state.get("mode")) ? openAi.maxRetries() : 0);
+        state.put("opponentRetryLimit", openAi != null && GameMode.CHATGPT.id().equals(state.get("mode")) ? openAi.maxRetries() : 0);
         return state;
     }
 

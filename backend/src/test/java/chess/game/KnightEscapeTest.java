@@ -21,7 +21,7 @@ class KnightEscapeTest {
         var push=g.legalActions().stream().filter(a->a.id().equals("move:27:35:")).findFirst();
         if(push.isEmpty()) return true;
         var hints=TacticalHints.forPosition(g.simulate(push.get()).observationForCurrentPlayer());
-        return hints.stream().mapToInt(h->((Number)h.get("worstMaterialDeltaAfterRecapture")).intValue()).max().orElse(-1000)>-100;
+        return hints.stream().mapToInt(h->h.worstMaterialDeltaAfterRecapture()).max().orElse(-1000)>-100;
     }
 
     @Test void opensEscapeBeforePawnAttackInsteadOfUnrelatedFlankMove() throws Exception {
@@ -42,13 +42,13 @@ class KnightEscapeTest {
         var g=before(38);
         assertTrue(g.isSquareAttacked(44,true)); assertFalse(hasSafeExit(g));
         var hints=TacticalHints.forPosition(g.observationForCurrentPlayer());
-        var retreats=hints.stream().filter(h->((String)h.get("actionId")).startsWith("move:44:")).toList();
+        var retreats=hints.stream().filter(h->h.actionId().startsWith("move:44:")).toList();
         assertEquals(4,retreats.size());
-        assertTrue(retreats.stream().allMatch(h->((Number)h.get("worstMaterialDeltaAfterRecapture")).intValue()==-320));
-        var wait=hints.stream().filter(h->h.get("actionId").equals("move:50:42:")).findFirst().orElseThrow();
-        assertEquals(-220,((Number)wait.get("worstMaterialDeltaAfterRecapture")).intValue());
+        assertTrue(retreats.stream().allMatch(h->h.worstMaterialDeltaAfterRecapture()==-320));
+        var wait=hints.stream().filter(h->h.actionId().equals("move:50:42:")).findFirst().orElseThrow();
+        assertEquals(-220,wait.worstMaterialDeltaAfterRecapture());
         var allowed=TacticalHints.saferActionIds(hints);
-        assertTrue(retreats.stream().noneMatch(h->allowed.contains(h.get("actionId"))));
+        assertTrue(retreats.stream().noneMatch(h->allowed.contains(h.actionId())));
         assertTrue(allowed.contains(TestSessions.ai().choose(g)));
     }
 }

@@ -12,13 +12,13 @@ final class CheckingForkAnalysis {
         for (int square = 0; square < position.boardGeometry().size(); square++) {
             var p = position.pieceAt(square);
             if (p == null || p.white() != side) continue;
-            if (p.type() == 'K') king = square;
+            if (p.type() == chess.pieces.PieceType.KING) king = square;
             else if (PositionEvaluator.materialValue(p.type()) >= 320) targets.add(square);
         }
         if (king < 0 || targets.isEmpty()) return false;
         for (int square = 0; square < position.boardGeometry().size(); square++) {
             var p = position.pieceAt(square);
-            if (p == null || p.white() == side || p.type() != 'N') continue;
+            if (p == null || p.white() == side || p.type() != chess.pieces.PieceType.KNIGHT) continue;
             for (var move : position.movementOptions(square)) {
                 if (!chess.pieces.Knight.reaches(position.boardGeometry(), move.to(), king)) continue;
                 if (targets.stream().anyMatch(t -> chess.pieces.Knight.reaches(position.boardGeometry(), move.to(), t))) return true;
@@ -30,7 +30,7 @@ final class CheckingForkAnalysis {
     static int materialAfterBestDefence(Game checked, boolean side, int baseline, int knightSquare) {
         int current = TacticalHints.material(checked, side) - baseline;
         var knight = checked.pieceAt(knightSquare);
-        if (knight == null || knight.type() != 'N' || knight.white() == side || knight.frozen() || knight.astral()) return current;
+        if (knight == null || knight.type() != chess.pieces.PieceType.KNIGHT || knight.white() == side || knight.frozen() || knight.astral()) return current;
         boolean hasTarget = checked.movementOptions(knightSquare).stream().anyMatch(a -> {
             var victim = checked.pieceAt(a.to());
             return victim != null && victim.white() == side && PositionEvaluator.materialValue(victim.type()) >= 320;

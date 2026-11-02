@@ -1,45 +1,55 @@
 package chess.opponent;
 
 import chess.game.Game;
+import chess.game.GameMode;
 import chess.game.MoveSelector;
+
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
-/** Выбирает реализацию по режиму партии, включая режим из загруженного сохранения. */
+/** Соперник для каждого режима партии, включая режим из загруженного сохранения. */
 public final class OpponentRegistry {
-    private final Map<String, Opponent> opponents;
+    private final Map<GameMode, Opponent> opponents = new EnumMap<>(GameMode.class);
 
     public OpponentRegistry(MoveSelector local, MoveSelector chatGpt) {
-        opponents = new java.util.HashMap<>(Map.of("ai", adapt("ai", local), "chatgpt", adapt("chatgpt", chatGpt),
-                "network", new NetworkOpponent(), "human", new HumanOpponent()));
+        register(adapt(GameMode.AI, local));
+        register(adapt(GameMode.CHATGPT, chatGpt));
+        register(new NetworkOpponent());
+        register(new HumanOpponent());
     }
 
-    public Opponent forMode(String mode) {
+    /** Новый вид соперника подключается одной регистрацией. */
+    public void register(Opponent opponent) {
+        opponents.put(opponent.mode(), opponent);
+    }
+
+    public Opponent forMode(GameMode mode) {
         Opponent opponent = opponents.get(mode);
-        if (opponent == null) throw new IllegalArgumentException("Неизвестный соперник: " + mode);
+        if (opponent == null) throw new IllegalArgumentException("Неизвестный соперник: " + mode.id());
         return opponent;
     }
 
     public boolean chatGptConfigured() {
-        return opponents.get("chatgpt") instanceof ChatGptOpponent chat && chat.configured();
+        return opponents.get(GameMode.CHATGPT) instanceof ChatGptOpponent chat && chat.configured();
     }
 
     public void configureChatGptKey(String apiKey) {
-        if (!(opponents.get("chatgpt") instanceof ChatGptOpponent chat))
+        if (!(opponents.get(GameMode.CHATGPT) instanceof ChatGptOpponent chat))
             throw new IllegalArgumentException("Настройка API-ключа для этого соперника недоступна");
-        opponents.put("chatgpt", chat.withApiKey(apiKey));
+        register(chat.withApiKey(apiKey));
     }
 
     /** Сохраняет возможность подключать простые тестовые стратегии через MoveSelector. */
-    private static Opponent adapt(String mode, MoveSelector strategy) {
+    private static Opponent adapt(GameMode mode, MoveSelector strategy) {
         Objects.requireNonNull(strategy);
         if (strategy instanceof Opponent opponent) {
-            if (!opponent.mode().equals(mode)) throw new IllegalArgumentException("Не совпадает режим соперника");
+            if (opponent.mode() != mode) throw new IllegalArgumentException("Не совпадает режим соперника");
             return opponent;
         }
-        if (mode.equals("ai")) return new LocalAiOpponent(strategy);
+        if (mode == GameMode.AI) return new LocalAiOpponent(strategy);
         return new Opponent() {
-            @Override public String mode() { return mode; }
+            @Override public GameMode mode() { return mode; }
             @Override public boolean automatic() { return true; }
             @Override public boolean requiresScoutPreview() { return true; }
             @Override public String choose(Game game) { return strategy.choose(game); }

@@ -12,6 +12,15 @@ function shape(type: IconType): ReactNode {
         case 'EXPAND_LEFT':
         case 'EXPAND_RIGHT':
             return <><rect x="7" y="7" width="34" height="34" rx="2"/><path d="M24 13v22M13 24h22"/></>;
+        case 'TRANSFORM':
+            return <path d="M10 38h12M13 38l3-16-4-6 6-6h2l-2 6 4 6-3 16M30 38h10M31 38c0-8 2-12 4-16-3-3-3-8 0-11 3 3 3 8 0 11 2 4 4 8 4 16M22 20h6m-2-3 3 3-3 3"/>;
+        case 'INFLATION':
+        case 'SHRINKFLATION':
+            return <>
+                <rect x="6" y="12" width="13" height="20" rx="2"/>
+                <rect x="21" y="12" width="13" height="20" rx="2"/>
+                <path d={type === 'INFLATION' ? 'M40 18v12m-6-6h12' : 'M34 24h12'}/>
+            </>;
         case 'DESTROY_CARD':
             return <><rect x="12" y="6" width="25" height="36" rx="3"/><path d="m17 16 15 16m0-16L17 32"/></>;
         case 'SACRIFICE':

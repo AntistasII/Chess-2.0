@@ -14,8 +14,8 @@ public final class King extends SlidingPiece {
     }
 
     @Override
-    public char type() {
-        return 'K';
+    public PieceType type() {
+        return PieceType.KING;
     }
 
     @Override
@@ -44,11 +44,11 @@ public final class King extends SlidingPiece {
         for (boolean shortSide : new boolean[]{true, false}) {
             int rookSquare = context.rookStartSquare(white(), shortSide);
             Piece rook = context.pieceAt(rookSquare);
-            if (!context.castleAllowed(white(), shortSide) || rook == null || rook.type() != 'R'
+            if (!context.castleAllowed(white(), shortSide) || rook == null || rook.type() != PieceType.ROOK
                     || rook.white() != white() || rook.moved() || rook.astral() || rook.frozen()) continue;
             int step = shortSide ? 1 : -1;
             if (context.clearRay(from, rookSquare) && context.kingSafeAt(this, from, from + step))
-                moves.add(Action.move(from, from + step * 2, "castle"));
+                moves.add(Action.move(from, from + step * 2, Action.CASTLE));
         }
         return moves;
     }

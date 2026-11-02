@@ -23,27 +23,27 @@ class CheckingForkTest {
     @Test void identifiesLossAfterCheckAndIncludesRookRecapture() throws Exception {
         var game=position(66);
         var hint=TacticalHints.forPosition(game.observationForCurrentPlayer()).stream()
-                .filter(h->h.get("actionId").equals("move:21:36:")).findFirst().orElseThrow();
-        assertEquals("move:33:50:",hint.get("checkingForkReplyId"));
-        assertEquals(-180,((Number)hint.get("worstMaterialDeltaAfterRecapture")).intValue());
+                .filter(h->h.actionId().equals("move:21:36:")).findFirst().orElseThrow();
+        assertEquals("move:33:50:",hint.checkingForkReplyId());
+        assertEquals(-180,hint.worstMaterialDeltaAfterRecapture());
     }
 
     @Test void actualCardEscapePreventsForcedRookLoss() throws Exception {
         var game=position(66);
-        game.handLimit=4;
+        game.replaceSettings(new GameSettings(game.mode(), 4, game.difficulty()));
         RulesTest.card(game,chess.cards.CardType.ASTRAL);
         var hint=TacticalHints.forPosition(game.observationForCurrentPlayer()).stream()
-                .filter(h->h.get("actionId").equals("move:21:36:")).findFirst().orElseThrow();
-        assertEquals(0,((Number)hint.get("worstMaterialDeltaAfterRecapture")).intValue());
+                .filter(h->h.actionId().equals("move:21:36:")).findFirst().orElseThrow();
+        assertEquals(0,hint.worstMaterialDeltaAfterRecapture());
     }
 
     @Test void frozenCheckingKnightKeepsCheckButCannotTakeRook() throws Exception {
         var game=position(66);
-        game.board.set(50,null);
-        game.squareEffects.put(50,new SquareEffect(SquareEffect.Type.HIDDEN_TRAP,false,71,3));
+        game.board().set(50,null);
+        game.effects().place(50,new SquareEffect(SquareEffect.Type.HIDDEN_TRAP,false,71,3));
         var hint=TacticalHints.forPosition(game.observationForCurrentPlayer()).stream()
-                .filter(h->h.get("actionId").equals("move:21:36:")).findFirst().orElseThrow();
-        assertEquals(100,((Number)hint.get("worstMaterialDeltaAfterRecapture")).intValue());
+                .filter(h->h.actionId().equals("move:21:36:")).findFirst().orElseThrow();
+        assertEquals(100,hint.worstMaterialDeltaAfterRecapture());
         game.play("move:21:36:"); game.play("move:33:50:");
         assertTrue(game.inCheck(false)); assertTrue(game.pieceAt(50).frozen());
     }

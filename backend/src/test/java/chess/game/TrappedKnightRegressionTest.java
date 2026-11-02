@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class TrappedKnightRegressionTest {
     @Test void recognizesForcedKnightLossRatherThanInventingSafeRetreat() {
         Game game = RulesTest.empty();
-        game.board.clear();
-        game.whiteTurn = false;
+        game.board().clear();
+        game.setWhiteTurn(false);
         String[] ranks = {"......K.", "....PP.P", "......P.", "R.......",
                 "........", "n.pB..pp", "......pk", "..Q....."};
         Set<Integer> unmoved = Set.of(12, 13, 15, 54);
@@ -25,17 +25,17 @@ class TrappedKnightRegressionTest {
                 int square = rank * 8 + file;
                 var piece = PieceFactory.create(id++, Character.toUpperCase(code), Character.isUpperCase(code));
                 if (!unmoved.contains(square)) piece.markMoved();
-                game.board.set(square, piece);
+                game.board().set(square, piece);
             }
         RulesTest.card(game, CardType.SHIELD);
-        game.deck.add(CardCatalog.create(2000, CardType.UNKNOWN));
+        game.cardPiles().deck().add(CardCatalog.create(2000, CardType.UNKNOWN));
         assertTrue(game.isSquareAttacked(40, true), "Ra4 already attacks Na6");
         var hints = TacticalHints.forPosition(game);
-        int best = hints.stream().mapToInt(h -> ((Number)h.get("worstMaterialDeltaAfterRecapture")).intValue()).max().orElseThrow();
+        int best = hints.stream().mapToInt(h -> h.worstMaterialDeltaAfterRecapture()).max().orElseThrow();
         assertEquals(-320, best, "No move, card or draw saves the trapped knight");
         for (String knightMove : new String[]{"move:40:25:", "move:40:34:", "move:40:50:", "move:40:57:"}) {
-            var hint = hints.stream().filter(h -> h.get("actionId").equals(knightMove)).findFirst().orElseThrow();
-            assertEquals(-320, hint.get("worstMaterialDeltaAfterRecapture"), knightMove);
+            var hint = hints.stream().filter(h -> h.actionId().equals(knightMove)).findFirst().orElseThrow();
+            assertEquals(-320, hint.worstMaterialDeltaAfterRecapture(), knightMove);
         }
         assertFalse(TacticalHints.saferActionIds(hints).isEmpty());
     }

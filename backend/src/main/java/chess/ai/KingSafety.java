@@ -1,5 +1,6 @@
 package chess.ai;
 
+import chess.pieces.PieceType;
 import chess.game.Game;
 import chess.pieces.Piece;
 
@@ -11,7 +12,7 @@ final class KingSafety {
         int material = 0;
         for (int square = 0; square < game.boardGeometry().size(); square++) {
             Piece p = game.pieceAt(square);
-            if (p != null && p.white() == side && (p.type() == 'Q' || p.type() == 'R'))
+            if (p != null && p.white() == side && (p.type() == PieceType.QUEEN || p.type() == PieceType.ROOK))
                 material += PositionEvaluator.materialValue(p.type());
         }
         return material;

@@ -1,7 +1,10 @@
 package chess.opponent;
 
 import chess.game.Game;
+import chess.game.GameMode;
+import chess.ai.TacticalHint;
 import chess.ai.TacticalHints;
+import chess.game.Action;
 import chess.ai.Ai;
 import chess.ai.SearchResult;
 import chess.ai.CardDrawPolicy;
@@ -78,7 +81,7 @@ public final class ChatGptOpponent extends Opponent {
         return prompt;
     }
 
-    @Override public String mode() { return "chatgpt"; }
+    @Override public GameMode mode() { return GameMode.CHATGPT; }
     @Override public boolean automatic() { return true; }
     @Override public boolean requiresScoutPreview() { return true; }
 
@@ -88,10 +91,10 @@ public final class ChatGptOpponent extends Opponent {
             throw new Failure("Для ChatGPT заполните openai.api-key в application.yml и перезапустите сервер.", false);
         var input = decisionInput(position);
         @SuppressWarnings("unchecked")
-        var hints = (List<Map<String, Object>>) input.get("tacticalHints");
+        var hints = (List<TacticalHint>) input.get("tacticalHints");
         Set<String> allowed = TacticalHints.saferActionIds(position, hints);
         SearchResult review = null;
-        if (CardDrawPolicy.shouldDraw(position, hints, allowed)) allowed = Set.of("draw");
+        if (CardDrawPolicy.shouldDraw(position, hints, allowed)) allowed = Set.of(Action.DRAW_ID);
         else if (advisor != null && allowed.size() > 1) {
             review = advisor.analyze(position, allowed);
             var shortlist = review.competitiveActions();
@@ -105,7 +108,7 @@ public final class ChatGptOpponent extends Opponent {
         }
         @SuppressWarnings("unchecked")
         var drawStrategy = new LinkedHashMap<>((Map<String, Object>)input.get("cardStrategy"));
-        if (Boolean.TRUE.equals(drawStrategy.get("drawAvailable")) && !candidates.contains("draw")) {
+        if (Boolean.TRUE.equals(drawStrategy.get("drawAvailable")) && !candidates.contains(Action.DRAW_ID)) {
             drawStrategy.put("drawAvailable", false);
             drawStrategy.put("priority", "tactical_action");
         }
@@ -114,7 +117,7 @@ public final class ChatGptOpponent extends Opponent {
         @SuppressWarnings("unchecked")
         var actionViews = (List<Map<String, Object>>) input.get("actions");
         input.put("actions", actionViews.stream().filter(a -> candidates.contains(a.get("id"))).toList());
-        input.put("tacticalHints", hints.stream().filter(h -> candidates.contains(h.get("actionId"))).toList());
+        input.put("tacticalHints", hints.stream().filter(h -> candidates.contains(h.actionId())).toList());
         if (actions.isEmpty()) throw new Failure("У ChatGPT нет допустимых действий.");
         var schema = Map.of("type", "object", "additionalProperties", false,
                 "properties", Map.of("actionId", Map.of("type", "string")),
@@ -174,7 +177,7 @@ public final class ChatGptOpponent extends Opponent {
     static Map<String, Object> decisionInput(Game position) {
         var input = new LinkedHashMap<String, Object>(position.opponentState());
         input.put("history", position.moveHistory());
-        boolean canDraw = position.legalActions().stream().anyMatch(a -> a.id().equals("draw"));
+        boolean canDraw = position.legalActions().stream().anyMatch(Action::isDraw);
         int cards = position.cards(position.whiteTurn()).size();
         input.put("tacticalHints", TacticalHints.forPosition(position));
         input.put("cardStrategy", Map.of(
@@ -190,7 +193,7 @@ public final class ChatGptOpponent extends Opponent {
     @SuppressWarnings("unchecked")
     static Map<String, Object> compactInput(Map<String, Object> source) {
         var out = new LinkedHashMap<String, Object>();
-        for (String key : List.of("boardSize", "castlingRights", "whiteTurn", "ply", "handLimit", "enemyCards",
+        for (String key : List.of("boardSize", "castlingRights", "whiteTurn", "ply", "handLimit", "enemyHandLimit", "enemyCards",
                 "deckCount", "discardCount", "check", "cardStrategy", "search", "squareEffects")) out.put(key, source.get(key));
         out.put("board", ((List<Map<String, Object>>) source.get("board")).stream().map(p -> List.of(
                 p.get("square"), p.get("type"), Boolean.TRUE.equals(p.get("white")) ? "W" : "B",
@@ -203,13 +206,8 @@ public final class ChatGptOpponent extends Opponent {
                     .map(c -> List.of(c.get("id"), c.get("type"), c.getOrDefault("durationTurns", 0))).toList());
         out.put("captured", ((List<Map<String, Object>>) source.get("captured")).stream()
                 .map(p -> List.of(p.get("type"), Boolean.TRUE.equals(p.get("white")) ? "W" : "B")).toList());
-        out.put("candidates", ((List<Map<String, Object>>) source.get("tacticalHints")).stream()
-                .map(h -> List.of(h.get("actionId"), h.get("immediateMaterialDelta"),
-                        h.get("worstMaterialDeltaAfterOneReply"), h.get("dangerousReplyId"),
-                        h.getOrDefault("mateInOneReplyId", ""),
-                        h.getOrDefault("worstMaterialDeltaAfterRecapture", h.get("worstMaterialDeltaAfterOneReply")),
-                        h.getOrDefault("mateInOne", false), h.getOrDefault("mateThreat", false),
-                        h.getOrDefault("checkingForkReplyId", ""))).toList());
+        out.put("candidates", ((List<TacticalHint>) source.get("tacticalHints")).stream()
+                .map(TacticalHint::candidateRow).toList());
         out.put("history", ((List<String>) source.get("history")).stream().map(ChatGptOpponent::compactHistory).toList());
         List<String> lessons = (List<String>) source.getOrDefault("learnedLessons", List.of());
         out.put("learnedLessons", lessons.subList(Math.max(0, lessons.size() - 8), lessons.size()).stream()

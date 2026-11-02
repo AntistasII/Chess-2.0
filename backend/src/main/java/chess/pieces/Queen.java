@@ -9,8 +9,8 @@ public final class Queen extends SlidingPiece {
     }
 
     @Override
-    public char type() {
-        return 'Q';
+    public PieceType type() {
+        return PieceType.QUEEN;
     }
     @Override
     protected boolean supportsDirection(int dr, int df) { return true; }

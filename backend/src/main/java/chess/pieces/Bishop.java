@@ -9,8 +9,8 @@ public final class Bishop extends SlidingPiece {
     }
 
     @Override
-    public char type() {
-        return 'B';
+    public PieceType type() {
+        return PieceType.BISHOP;
     }
 
     @Override

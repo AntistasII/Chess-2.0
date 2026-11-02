@@ -4,6 +4,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.Map;
 import java.util.Set;
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import chess.game.Difficulty;
+import chess.game.GameMode;
 
 /** Настройки новой партии по типу соперника. Значения по умолчанию задаются в YAML. */
 @ConfigurationProperties(prefix = "chess.game")
@@ -11,14 +15,19 @@ public record GameProperties(String backRank, String defaultMode, Map<String, Se
     public GameProperties {
         if (backRank == null || !Arrays.equals(backRank.chars().sorted().toArray(), "BBKNNQRR".chars().toArray()))
             throw new IllegalArgumentException("chess.game.back-rank должен содержать 2 ладьи, 2 коня, 2 слона, ферзя и короля");
-        if (opponents == null || !opponents.keySet().equals(Set.of("ai", "chatgpt", "network", "human")))
+        if (opponents == null || !opponents.keySet().equals(ids(GameMode.values(), GameMode::id)))
             throw new IllegalArgumentException("Настройте ai, chatgpt, network и human в chess.game.opponents");
         opponents = Map.copyOf(opponents);
         if (defaultMode == null || !opponents.containsKey(defaultMode))
             throw new IllegalArgumentException("Неизвестный chess.game.default-mode");
-        if (search == null || !search.keySet().equals(Set.of("easy", "normal", "hard")))
+        if (search == null || !search.keySet().equals(ids(Difficulty.values(), Difficulty::id)))
             throw new IllegalArgumentException("Настройте easy, normal и hard в chess.game.search");
         search = Map.copyOf(search);
+    }
+
+    /** Значения id всех режимов или сложностей: допустимые ключи настроек. */
+    private static <E> Set<String> ids(E[] values, Function<E, String> id) {
+        return Arrays.stream(values).map(id).collect(Collectors.toUnmodifiableSet());
     }
 
     public Settings forMode(String mode) {
@@ -44,7 +53,7 @@ public record GameProperties(String backRank, String defaultMode, Map<String, Se
     public record Settings(int handLimit, String difficulty) {
         public Settings {
             if (handLimit < 1 || handLimit > 12) throw new IllegalArgumentException("Лимит карт: от 1 до 12");
-            if (difficulty == null || !Set.of("easy", "normal", "hard").contains(difficulty))
+            if (difficulty == null || !ids(Difficulty.values(), Difficulty::id).contains(difficulty))
                 throw new IllegalArgumentException("Неизвестная сложность");
         }
     }

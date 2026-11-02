@@ -1,5 +1,6 @@
 package chess.ai;
 
+import chess.pieces.PieceType;
 import chess.cards.CardType;
 import chess.config.GameProperties.SearchLimits;
 import chess.game.Action;
@@ -102,7 +103,7 @@ final class SearchEngine {
             double penalty = MovePreferences.repeatedActionPenalty(game, action)
                     + MovePreferences.reversalPenalty(game, action, next)
                     + MovePreferences.castlingLossPenalty(game, action, next)
-                    + (action.kind().equals("draw") && EndgameConversion.active(game, side) ? 90 : 0);
+                    + (action.isDraw() && EndgameConversion.active(game, side) ? 90 : 0);
             double score;
             if (first) score = search(next, depth - 1, -Double.MAX_VALUE, Double.MAX_VALUE, 1) - penalty;
             else {
@@ -144,7 +145,7 @@ final class SearchEngine {
             boolean quiet = !tactical(game, action);
             // У границы поиска позиционные карты (поля, заморозка, щит…) почти не меняют
             // исход, но умножают ветвление. Под шахом рассматриваем все спасения.
-            if (quiet && index > 0 && !inCheck && depth <= 2 && action.kind().equals("card")
+            if (quiet && index > 0 && !inCheck && depth <= 2 && action.isCard()
                     && !next.inCheck(next.whiteTurn())) continue;
             int newDepth = depth - 1;
             double score;
@@ -231,16 +232,16 @@ final class SearchEngine {
 
     /** Действия, способные сразу изменить материал. */
     static boolean tactical(Game game, Action action) {
-        if (action.kind().equals("move"))
+        if (action.isMove())
             return game.pieceAt(action.to()) != null || promotion(action) || enPassant(game, action);
-        if (!action.kind().equals("card")) return false;
+        if (!action.isCard()) return false;
         CardType type = cardType(game, action);
         return type == CardType.CONVERT || type == CardType.REVIVE_PAWN || type == CardType.REVIVE_PIECE
                 || type == CardType.UNDO_MOVE;
     }
 
     private static double gain(Game game, Action action) {
-        if (action.kind().equals("card")) return 900;
+        if (action.isCard()) return 900;
         var victim = game.pieceAt(action.to());
         double value = victim == null ? 100 : PositionEvaluator.materialValue(victim.type());
         if (promotion(action)) value += 800;
@@ -263,8 +264,8 @@ final class SearchEngine {
     private long priority(Game game, Action action, String preferred, String[] killer) {
         String id = action.id();
         if (id.equals(preferred)) return 1_000_000_000L;
-        if (action.kind().equals("draw")) return -1_000_000L + history.getOrDefault(id, 0);
-        if (action.kind().equals("move")) {
+        if (action.isDraw()) return -1_000_000L + history.getOrDefault(id, 0);
+        if (action.isMove()) {
             long value = 0;
             var victim = game.pieceAt(action.to());
             if (victim != null) value += 100_000_000L + PositionEvaluator.materialValue(victim.type()) * 100L
@@ -276,7 +277,7 @@ final class SearchEngine {
         if (id.equals(killer[0])) return 80_000_000L;
         if (id.equals(killer[1])) return 79_000_000L;
         // Тихие ходы и карты без прямой выгоды упорядочивает история отсечений.
-        return history.getOrDefault(id, 0) + (action.kind().equals("card") ? -200 : 0);
+        return history.getOrDefault(id, 0) + (action.isCard() ? -200 : 0);
     }
 
     private static CardType cardType(Game game, Action action) {
@@ -290,7 +291,7 @@ final class SearchEngine {
 
     private static boolean enPassant(Game game, Action action) {
         var piece = game.pieceAt(action.from());
-        return piece != null && piece.type() == 'P' && game.pieceAt(action.to()) == null
+        return piece != null && piece.type() == PieceType.PAWN && game.pieceAt(action.to()) == null
                 && game.boardGeometry().file(action.from()) != game.boardGeometry().file(action.to());
     }
 

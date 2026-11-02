@@ -5,7 +5,11 @@ import org.springframework.core.env.Environment;
 /**
  * Настройки сервера; переменные Railway и прежние ключи окружения остаются совместимыми.
  */
-public record ServerProperties(int port, String hostKey, String guestKey) {
+public record ServerProperties(int port, String hostKey, String guestKey, java.nio.file.Path saveFile) {
+    public ServerProperties(int port, String hostKey, String guestKey) {
+        this(port, hostKey, guestKey, chess.game.SaveFile.DEFAULT);
+    }
+
     public static ServerProperties from(Environment environment) {
 
         String cloudPort = environment.getProperty("PORT");
@@ -19,7 +23,8 @@ public record ServerProperties(int port, String hostKey, String guestKey) {
             if (hostKey.length() < 16 || guestKey.length() < 16 || hostKey.equals(guestKey))
                 throw new IllegalArgumentException("Задайте разные CHESS_HOST_KEY и CHESS_GUEST_KEY длиной от 16 символов.");
         }
-        return new ServerProperties(port, hostKey, guestKey);
+        String saveFile = environment.getProperty("server.save-file", chess.game.SaveFile.DEFAULT.toString());
+        return new ServerProperties(port, hostKey, guestKey, java.nio.file.Path.of(saveFile));
     }
 
     public boolean networkMode() {
@@ -28,6 +33,6 @@ public record ServerProperties(int port, String hostKey, String guestKey) {
 
     @Override
     public String toString() {
-        return "ServerProperties[port=" + port + ", hostKey=***, guestKey=***]";
+        return "ServerProperties[port=" + port + ", hostKey=***, guestKey=***, saveFile=" + saveFile + "]";
     }
 }

@@ -14,8 +14,8 @@ public final class Knight extends Piece {
     }
 
     @Override
-    public char type() {
-        return 'N';
+    public PieceType type() {
+        return PieceType.KNIGHT;
     }
 
     private static final int[][] OFFSETS = {{1, 2}, {1, -2}, {-1, 2}, {-1, -2},

@@ -26,7 +26,7 @@ public interface MovementContext {
 
     default boolean canCapture(int square, boolean white) {
         Piece target = pieceAt(square);
-        return !blocked(square) && target != null && !target.astral() && target.white() != white && target.type() != 'K';
+        return !blocked(square) && target != null && !target.astral() && target.white() != white && target.type() != PieceType.KING;
     }
 
     default boolean available(int square, boolean white) {

@@ -14,44 +14,44 @@ class GameLifecycleTest {
 
     @Test void repetitionsSurviveSaveAndContinueToAutomaticDraw() {
         Game game = RulesTest.empty();
-        game.board.set(1, PieceFactory.create(3, 'N', true));
-        game.board.set(57, PieceFactory.create(4, 'N', false));
+        game.board().set(1, PieceFactory.create(3, 'N', true));
+        game.board().set(57, PieceFactory.create(4, 'N', false));
         cycle(game);
         cycle(game);
         assertFalse(game.canClaimDraw());
         Game restored = GameSave.decode(GameSave.encode(game));
         cycle(restored);
         assertTrue(restored.canClaimDraw());
-        assertTrue(restored.result.isEmpty());
+        assertTrue(restored.result() == GameResult.IN_PROGRESS);
         cycle(restored);
         // Первой в пятый раз повторится промежуточная позиция с двумя вышедшими конями.
         RulesTest.move(restored, 1, 18);
         RulesTest.move(restored, 57, 42);
-        assertEquals("repetition", restored.result);
+        assertEquals("repetition", restored.result().id());
         assertTrue(restored.legalActions().isEmpty());
-        assertTrue(game.result.isEmpty());
+        assertTrue(game.result() == GameResult.IN_PROGRESS);
     }
 
     @Test void mateHasPriorityOverSeventyFiveMoveDraw() {
         Game game = RulesTest.empty();
-        game.board.clear();
-        game.board.set(56, PieceFactory.create(1, 'K', false));
-        game.board.set(42, PieceFactory.create(2, 'K', true));
-        game.board.set(41, PieceFactory.create(3, 'Q', true));
-        game.halfMoves = 149;
+        game.board().clear();
+        game.board().set(56, PieceFactory.create(1, 'K', false));
+        game.board().set(42, PieceFactory.create(2, 'K', true));
+        game.board().set(41, PieceFactory.create(3, 'Q', true));
+        game.setHalfMoves(149);
         RulesTest.move(game, 41, 49);
-        assertEquals(150, game.halfMoves);
-        assertEquals("white", game.result);
+        assertEquals(150, game.halfMoves());
+        assertEquals("white", game.result().id());
     }
 
     @Test void automaticDrawEndsQuietGameAndHistoryNamesPieces() {
         Game game = RulesTest.empty();
-        game.halfMoves = 149;
+        game.setHalfMoves(149);
         RulesTest.move(game, 4, 3);
-        assertEquals("seventyFiveMoves", game.result);
+        assertEquals("seventyFiveMoves", game.result().id());
         assertEquals("Белые: Король e1 → d1", game.moveHistory().getFirst());
-        assertEquals(1, game.ply);
-        assertEquals(1, game.version);
+        assertEquals(1, game.ply());
+        assertEquals(1, game.version());
         assertFalse(game.whiteTurn());
     }
 }

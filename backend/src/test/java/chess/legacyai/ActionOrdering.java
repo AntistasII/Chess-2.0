@@ -22,15 +22,15 @@ final class ActionOrdering {
     }
 
     static boolean forcing(Game game, Action action) {
-        if (action.kind().equals("card")) return true;
-        return action.kind().equals("move") && (game.pieceAt(action.to()) != null
+        if (action.isCard()) return true;
+        return action.isMove() && (game.pieceAt(action.to()) != null
                 || promotion(action) || enPassant(game, action));
     }
 
     private static int priority(Game game, Action action, String preferred) {
         if (action.id().equals(preferred)) return 100_000;
-        if (action.kind().equals("draw")) return -100;
-        if (action.kind().equals("card")) return 500;
+        if (action.isDraw()) return -100;
+        if (action.isCard()) return 500;
         int value = promotion(action) ? 2000 : 0;
         var victim = game.pieceAt(action.to());
         if (victim != null) value += 1000 + PositionEvaluator.materialValue(victim.type()) * 10
@@ -44,7 +44,7 @@ final class ActionOrdering {
     }
 
     private static boolean enPassant(Game game, Action action) {
-        return game.pieceAt(action.from()).type() == 'P'
+        return game.pieceAt(action.from()).type() == chess.pieces.PieceType.PAWN
                 && game.boardGeometry().file(action.from()) != game.boardGeometry().file(action.to());
     }
 }

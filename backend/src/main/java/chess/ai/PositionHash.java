@@ -16,7 +16,7 @@ final class PositionHash {
         for (int square = 0; square < geometry.size(); square++) {
             var p = game.pieceAt(square);
             if (p == null) continue;
-            long code = "PNBRQK".indexOf(p.type()) * 2L + (p.white() ? 1 : 0);
+            long code = p.type().ordinal() * 2L + (p.white() ? 1 : 0);
             code = code * 16 + (p.frozen() ? 1 : 0) + (p.astral() ? 2 : 0) + (p.shield() ? 4 : 0) + (p.boost() ? 8 : 0);
             h ^= mix(square * 4096L + code + 7);
         }

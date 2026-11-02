@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CardDrawPolicyTest {
     private Game quiet(int cards) {
         Game game = RulesTest.empty();
-        game.deck.add(CardCatalog.create(2000, CardType.UNKNOWN));
+        game.cardPiles().deck().add(CardCatalog.create(2000, CardType.UNKNOWN));
         for (int i = 0; i < cards; i++) RulesTest.card(game, CardType.SHIELD);
         return game;
     }
@@ -30,22 +30,22 @@ class CardDrawPolicyTest {
 
     @Test void neverDrawsDuringCheck() {
         Game game = quiet(1);
-        game.board.set(12, PieceFactory.create(3, 'R', false));
+        game.board().set(12, PieceFactory.create(3, 'R', false));
         assertTrue(game.inCheck(true));
         assertFalse(shouldDraw(game));
     }
 
     @Test void savesAttackedQueenInsteadOfDrawing() {
         Game game = quiet(1);
-        game.board.set(8, PieceFactory.create(3, 'Q', true));
-        game.board.set(56, PieceFactory.create(4, 'R', false));
+        game.board().set(8, PieceFactory.create(3, 'Q', true));
+        game.board().set(56, PieceFactory.create(4, 'R', false));
         assertFalse(shouldDraw(game));
     }
 
     @Test void usesReadyQueenRevivalInsteadOfDrawing() {
         Game game = quiet(0);
         RulesTest.card(game, CardType.REVIVE_PIECE);
-        game.captured.add(PieceFactory.create(3, 'Q', true));
+        game.captured().add(PieceFactory.create(3, 'Q', true));
         assertFalse(shouldDraw(game));
     }
 

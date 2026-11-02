@@ -1,5 +1,6 @@
 package chess.cards.impl;
 
+import chess.pieces.PieceType;
 import chess.cards.CardType;
 import chess.cards.CardDefinition;
 import chess.cards.CardContext;
@@ -16,7 +17,7 @@ public final class FreezeCard extends TargetedCard {
 
     @Override
     public boolean canTarget(Piece piece, boolean own) {
-        return !own && piece.type() != 'K' && !piece.frozen();
+        return !own && piece.type() != PieceType.KING && !piece.frozen();
     }
 
     @Override

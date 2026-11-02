@@ -1,5 +1,6 @@
 package chess.ai;
 
+import chess.pieces.PieceType;
 import chess.board.Geometry;
 import chess.game.Game;
 
@@ -8,9 +9,12 @@ import chess.game.Game;
  * «конкретная выгода» там означает материал, угрозы и карты, а не мелкие улучшения позиции.
  */
 final class BaselineEvaluator {
+    /** Ценность одного места в руке; разница вместимости рук после «Инфляции» и «Шринкфляции». */
+    static final int HAND_SLOT = 40;
+
     private BaselineEvaluator() {}
 
-    static int materialValue(char type) { return PositionEvaluator.materialValue(type); }
+    static int materialValue(PieceType type) { return PositionEvaluator.materialValue(type); }
 
     /** Положительная оценка означает преимущество выбранной стороны. */
     static double evaluate(Game g, boolean side) {
@@ -24,28 +28,28 @@ final class BaselineEvaluator {
             // Нормализация сохраняет прежнюю оценку на 8×8 и работает на прямоугольнике.
             double center = 7 - Math.abs((board.width() - 1) / 2.0 - board.file(s)) * 7 / Math.max(1, board.width() - 1)
                     - Math.abs((board.height() - 1) / 2.0 - board.rank(s)) * 7 / Math.max(1, board.height() - 1);
-            if (p.type() == 'P') value += advancement * 9;
-            if (p.type() == 'N' && !p.frozen() && !p.astral()) value += KnightMobility.evaluate(g, s);
-            if (p.type() == 'N' || p.type() == 'B') value += center * 7;
-            if (p.boost()) value += p.type() == 'K' ? 15 : 22;
+            if (p.type() == PieceType.PAWN) value += advancement * 9;
+            if (p.type() == PieceType.KNIGHT && !p.frozen() && !p.astral()) value += KnightMobility.evaluate(g, s);
+            if (p.type() == PieceType.KNIGHT || p.type() == PieceType.BISHOP) value += center * 7;
+            if (p.boost()) value += p.type() == PieceType.KING ? 15 : 22;
             if (p.shield()) value += 18;
             if (p.frozen()) value -= value * .18;
             if (p.astral()) value -= value * .25;
             // Не оставляем фигуры под бесплатным взятием, даже на границе глубины поиска.
-            if (p.type() != 'K' && !p.astral() && g.isSquareAttacked(s, !p.white())) {
+            if (p.type() != PieceType.KING && !p.astral() && g.isSquareAttacked(s, !p.white())) {
                 boolean defended = g.isSquareAttacked(s, p.white());
                 value -= materialValue(p.type()) * (defended ? .06 : .45);
             }
-            if (p.type() == 'K') {
+            if (p.type() == PieceType.KING) {
                 // Укрытие пешками полезно при наличии тяжёлых фигур у противника.
                 for (int df = -1; df <= 1; df++) {
                     int rank = board.rank(s) + (p.white() ? 1 : -1), file = board.file(s) + df;
                     if (!board.inside(rank, file)) continue;
                     var shelter = g.pieceAt(board.index(rank, file));
-                    if (shelter != null && shelter.white() == p.white() && shelter.type() == 'P') value += 10;
+                    if (shelter != null && shelter.white() == p.white() && shelter.type() == PieceType.PAWN) value += 10;
                 }
             }
-            if (p.type() == 'K') value += KingSafety.evaluate(g, p, s);
+            if (p.type() == PieceType.KING) value += KingSafety.evaluate(g, p, s);
             score += (p.white() == side ? 1 : -1) * value;
         }
         for (boolean white : new boolean[]{true, false}) {
@@ -64,15 +68,19 @@ final class BaselineEvaluator {
                     case SHIELD -> 28;
                     case PAWN_BOOST -> 25;
                     case KING_BOOST -> 18;
-                    case REVIVE_PAWN -> g.capturedPieces().stream().anyMatch(p -> p.white() == white && p.type() == 'P') ? 65 : 12;
+                    case REVIVE_PAWN -> g.capturedPieces().stream().anyMatch(p -> p.white() == white && p.type() == PieceType.PAWN) ? 65 : 12;
                     case REVIVE_PIECE ->
-                            g.capturedPieces().stream().filter(p -> p.white() == white && p.type() != 'P').mapToInt(p -> p.type() == 'Q' ? 350 : p.type() == 'R' ? 230 : 140).max().orElse(12);
+                            g.capturedPieces().stream().filter(p -> p.white() == white && p.type() != PieceType.PAWN).mapToInt(p -> p.type() == PieceType.QUEEN ? 350 : p.type() == PieceType.ROOK ? 230 : 140).max().orElse(12);
                     case CLEANSE -> 30;
                     case SWAP -> 38;
                     case SCOUT -> 10;
                     case EXCHANGE -> 15;
+                    case TRANSFORM -> 20;
+                    case INFLATION, SHRINKFLATION -> 25;
                     default -> 45;
                 };
+            // Место в руке стоит примерно как карта, которую можно будет набрать.
+            handValue += g.handLimit(white) * HAND_SLOT;
             score += (white == side ? 1 : -1) * handValue;
         }
         score += EndgameConversion.evaluate(g, side) - EndgameConversion.evaluate(g, !side);

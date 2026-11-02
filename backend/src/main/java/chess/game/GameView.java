@@ -3,63 +3,100 @@ package chess.game;
 import chess.cards.Card;
 import chess.pieces.Piece;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Представление партии для API: скрывает руку соперника и порядок карт в колоде.
+ * Представление партии для интерфейса (JSON): скрывает руку соперника, порядок колоды
+ * и невидимые капканы. Набор ключей — контракт с фронтендом и Android.
  */
 final class GameView {
+    /** Сколько последних записей истории показывает интерфейс. */
+    private static final int HISTORY_LINES = 14;
+
     private GameView() {
     }
 
     /**
-     * Показывает руку текущего игрока в игре вдвоём или белых в игре с ИИ.
+     * Показывает руку текущего игрока в игре вдвоём или белых в игре с соперником.
      */
     static Map<String, Object> of(Game game) {
-        return of(game, game.mode.equals("human") ? game.whiteTurn : true,
-                game.mode.equals("human") || game.whiteTurn);
+        boolean shared = game.mode().sharedScreen();
+        return of(game, !shared || game.whiteTurn(), shared || game.whiteTurn());
     }
 
-    static Map<String, Object> of(Game game, boolean visible, boolean includeActions) {
+    /**
+     * @param viewerWhite    чья рука и какие поля видны
+     * @param includeActions добавить список допустимых действий (для игрока, чья очередь)
+     */
+    static Map<String, Object> of(Game game, boolean viewerWhite, boolean includeActions) {
+        var piles = game.cardPiles();
         var out = new LinkedHashMap<String, Object>();
-        var pieces = new ArrayList<Object>();
-        for (int s = 0; s < game.board.size(); s++) {
-            Piece p = game.board.get(s);
-            if (p != null)
-                pieces.add(Map.of("square", s, "id", p.id(), "type", "" + p.type(), "white", p.white(), "boost", p.boost(), "shield", p.shield(), "frozen", p.frozen(), "astral", p.astral(), "frozenTurns", Math.max(0, (p.frozenUntil() - game.ply + 1) / 2), "astralTurns", Math.max(0, (p.astralUntil() - game.ply + 1) / 2)));
-        }
-        out.put("board", pieces);
-        out.put("squareEffects", game.squareEffects.entrySet().stream()
-                .filter(e -> e.getValue().visibleTo(visible))
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> Map.of("square", e.getKey(), "type", e.getValue().type().name(),
-                        "white", e.getValue().white(), "turns", Math.max(0, (e.getValue().expiresAt() - game.ply + 1) / 2),
-                        "freezeTurns", e.getValue().freezeTurns())).toList());
+        out.put("board", pieces(game));
+        out.put("squareEffects", squareEffects(game, viewerWhite));
         var geometry = game.boardGeometry();
         out.put("boardSize", Map.of("width", geometry.width(), "height", geometry.height(),
                 "originFile", geometry.originFile(), "originRank", geometry.originRank()));
-        out.put("whiteTurn", game.whiteTurn);
+        out.put("whiteTurn", game.whiteTurn());
         out.put("castlingRights", Map.of("white", List.of(game.hasCastlingRight(true, true), game.hasCastlingRight(true, false)),
                 "black", List.of(game.hasCastlingRight(false, true), game.hasCastlingRight(false, false))));
-        out.put("mode", game.mode);
-        out.put("difficulty", game.difficulty);
-        out.put("handLimit", game.handLimit);
-        out.put("version", game.version);
-        out.put("gameId", game.gameId);
-        out.put("ply", game.ply);
-        out.put("hand", game.hand(visible).stream().map(GameView::cardJson).toList());
-        out.put("enemyCards", game.hand(!visible).size());
-        out.put("handWhite", visible);
-        out.put("deckCount", game.deck.size());
-        out.put("discardCount", game.discard.size());
-        out.put("check", game.inCheck(game.whiteTurn));
-        out.put("result", game.result);
+        out.put("mode", game.mode().id());
+        out.put("difficulty", game.difficulty().id());
+        out.put("handLimit", game.handLimit(viewerWhite));
+        out.put("enemyHandLimit", game.handLimit(!viewerWhite));
+        out.put("version", game.version());
+        out.put("gameId", game.gameId());
+        out.put("ply", game.ply());
+        out.put("hand", piles.hand(viewerWhite).stream().map(GameView::cardJson).toList());
+        out.put("enemyCards", piles.hand(!viewerWhite).size());
+        out.put("handWhite", viewerWhite);
+        out.put("deckCount", piles.deck().size());
+        out.put("discardCount", piles.discard().size());
+        out.put("check", game.inCheck(game.whiteTurn()));
+        out.put("result", game.result().id());
         out.put("canClaimDraw", game.canClaimDraw());
-        out.put("actions", !includeActions ? List.of() : game.legalActions().stream().map(GameView::actionJson).toList());
-        out.put("captured", game.captured.stream().map(p -> Map.of("type", "" + p.type(), "white", p.white())).toList());
-        out.put("history", List.copyOf(game.history.subList(Math.max(0, game.history.size() - 14), game.history.size())));
-        out.put("scouting", game.scouting >= 0 && visible == game.whiteTurn ? game.deck.subList(0, 2).stream().map(GameView::cardJson).toList() : List.of());
+        out.put("actions", includeActions ? game.legalActions().stream().map(GameView::actionJson).toList() : List.of());
+        out.put("captured", game.captured().stream()
+                .map(p -> Map.of("type", String.valueOf(p.type().code()), "white", p.white())).toList());
+        var history = game.history();
+        out.put("history", List.copyOf(history.subList(Math.max(0, history.size() - HISTORY_LINES), history.size())));
+        // Разведка раскрывает две верхние карты только тому, кто её применил.
+        out.put("scouting", game.scoutingActive() && viewerWhite == game.whiteTurn()
+                ? piles.deck().subList(0, 2).stream().map(GameView::cardJson).toList() : List.of());
         return out;
+    }
+
+    private static List<Object> pieces(Game game) {
+        var board = game.board();
+        int ply = game.ply();
+        var pieces = new ArrayList<Object>();
+        for (int s = 0; s < board.size(); s++) {
+            Piece p = board.get(s);
+            if (p != null)
+                pieces.add(Map.of("square", s, "id", p.id(), "type", String.valueOf(p.type().code()), "white", p.white(),
+                        "boost", p.boost(), "shield", p.shield(), "frozen", p.frozen(), "astral", p.astral(),
+                        "frozenTurns", turnsLeft(p.frozenUntil(), ply), "astralTurns", turnsLeft(p.astralUntil(), ply)));
+        }
+        return pieces;
+    }
+
+    private static List<Object> squareEffects(Game game, boolean viewerWhite) {
+        int ply = game.ply();
+        var out = new ArrayList<Object>();
+        for (var e : game.effects().sorted().entrySet()) {
+            SquareEffect effect = e.getValue();
+            if (!effect.visibleTo(viewerWhite)) continue;
+            out.add(Map.of("square", e.getKey(), "type", effect.type().name(), "white", effect.white(),
+                    "turns", turnsLeft(effect.expiresAt(), ply), "freezeTurns", effect.freezeTurns()));
+        }
+        return out;
+    }
+
+    /** Оставшиеся ходы владельца: один ход — два полухода партии. */
+    private static int turnsLeft(int untilPly, int ply) {
+        return Math.max(0, (untilPly - ply + 1) / 2);
     }
 
     /**
@@ -73,7 +110,7 @@ final class GameView {
      * Поля доступного действия; клиент отправляет его идентификатор.
      */
     static Map<String, Object> actionJson(Action a) {
-        return Map.of("id", a.id(), "kind", a.kind(), "from", a.from(), "to", a.to(), "other", a.other(), "cardId", a.cardId(), "option", a.option());
-
+        return Map.of("id", a.id(), "kind", a.kind().id(), "from", a.from(), "to", a.to(), "other", a.other(),
+                "cardId", a.cardId(), "option", a.option());
     }
 }

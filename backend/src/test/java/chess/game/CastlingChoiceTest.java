@@ -27,19 +27,19 @@ class CastlingChoiceTest {
         var g=position();
         assertTrue(g.hasCastlingRight(false,true)); assertTrue(g.hasCastlingRight(false,false));
         Game castled=g.simulate(g.legalActions().stream().filter(a->a.id().equals("move:60:62:castle")).findFirst().orElseThrow());
-        assertEquals('K',castled.board.get(62).type()); assertEquals('R',castled.board.get(61).type());
+        assertEquals('K', castled.board().get(62).type().code()); assertEquals('R', castled.board().get(61).type().code());
         assertFalse(castled.hasCastlingRight(false,true));
         var kingWalk=g.simulate(g.legalActions().stream().filter(a->a.id().equals("move:60:53:")).findFirst().orElseThrow());
         assertFalse(kingWalk.hasCastlingRight(false,true)); assertFalse(kingWalk.hasCastlingRight(false,false));
-        kingWalk.board.set(60,kingWalk.board.get(53)); kingWalk.board.set(53,null);
+        kingWalk.board().set(60,kingWalk.board().get(53)); kingWalk.board().set(53,null);
         assertFalse(kingWalk.hasCastlingRight(false,true),"Returning king does not restore rights");
         assertTrue(g.hasCastlingRight(false,true),"Search cannot alter live rights");
     }
 
     @Test void forcedKingDefenceAndEndgameKingMovesAreStillAvailable() throws Exception {
         var g=position();
-        g.board.set(59,null);
-        g.board.set(52,chess.pieces.PieceFactory.create(500,'R',true));
+        g.board().set(59,null);
+        g.board().set(52,chess.pieces.PieceFactory.create(500,'R',true));
         assertTrue(g.inCheck(false));
         assertTrue(g.legalActions().stream().anyMatch(a->a.id().equals("move:60:59:")));
         assertEquals("move:60:59:",TestSessions.ai().analyze(g,java.util.Set.of("move:60:59:")).actionId());
@@ -53,7 +53,7 @@ class CastlingChoiceTest {
         g.expandBoard(1,1,2,1);
         assertTrue(g.hasCastlingRight(false,true)); assertTrue(g.hasCastlingRight(false,false));
         int king=g.boardGeometry().originalSquare(7,4);
-        assertTrue(g.legalActions().stream().anyMatch(a->a.from()==king && a.option().equals("castle")));
+        assertTrue(g.legalActions().stream().anyMatch(a->a.from()==king && a.isCastling()));
     }
 
 }

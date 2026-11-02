@@ -16,7 +16,7 @@ const cards: Card[] = [
   {id: 5, type: 'CLEANSE', name: 'Очищение'},
 ];
 const state: State = {
-  board: [], boardSize: {width: 8, height: 8, originFile: 0, originRank: 0}, whiteTurn: true, mode: 'human', difficulty: 'normal', handLimit: 5,
+  board: [], boardSize: {width: 8, height: 8, originFile: 0, originRank: 0}, whiteTurn: true, mode: 'human', difficulty: 'normal', handLimit: 5, enemyHandLimit: 5,
   version: 0, ply: 0, hand: [], handWhite: true, enemyCards: 2, deckCount: 20,
   discardCount: 0, check: false, result: '', canClaimDraw: false, actions: [],
   history: [], captured: [], scouting: [],
@@ -117,7 +117,7 @@ for (const flipped of [false, true]) {
   assert.match(html, /невидимый капкан, осталось 2/);
   assert.match(html, /белая дыра, осталось 1/);
 }
-for (const type of ['EXPAND_BOTTOM', 'EXPAND_TOP', 'EXPAND_LEFT', 'EXPAND_RIGHT', 'DESTROY_CARD'] as const) {
+for (const type of ['EXPAND_BOTTOM', 'EXPAND_TOP', 'EXPAND_LEFT', 'EXPAND_RIGHT', 'DESTROY_CARD', 'INFLATION', 'SHRINKFLATION'] as const) {
   const card = {id: 99, type, name: type};
   const html = renderToStaticMarkup(<CardHand game={{...state, hand: [card]}} covered={false} canAct={true}
     cardId={99} activeCard={card} cardActions={[{id: 'test', kind: 'card', from: -1, to: -1, other: -1, cardId: 99, option: ''}]}
@@ -125,7 +125,7 @@ for (const type of ['EXPAND_BOTTOM', 'EXPAND_TOP', 'EXPAND_LEFT', 'EXPAND_RIGHT'
   assert.match(html, />Применить<\/button>/);
   assert.doesNotMatch(html, /undefined/);
 }
-assert.match(renderToStaticMarkup(<GameRules/>), /22 типа/);
+assert.match(renderToStaticMarkup(<GameRules/>), /25 типов/);
 console.log('New card UI checks passed: fields, 90 squares, both orientations, apply buttons and catalog.');
 
 async function retryChecks() {

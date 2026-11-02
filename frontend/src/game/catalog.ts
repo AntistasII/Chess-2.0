@@ -22,6 +22,9 @@ export const descriptions: Record<CardType, string> = {
     SWAP: 'Меняет местами две соседние свои фигуры, кроме короля. Их щиты и усиления расходуются.',
     SCOUT: 'Посмотрите 2 верхние карты общей колоды и выберите их порядок. Применение нельзя отменить.',
     EXCHANGE: 'Выберите другую карту из своей руки и обменяйте её на случайную карту противника вслепую.',
+    TRANSFORM: 'Ваш слон становится конём, а конь — слоном. Эффекты фигуры сохраняются.',
+    INFLATION: 'В вашей руке помещается на одну карту больше. Не больше 12.',
+    SHRINKFLATION: 'В руке соперника помещается на одну карту меньше, но не меньше одной. Лишние карты он не теряет, но не может добирать, пока не потратит их.',
 };
 export const names: Record<CardType, string> = {
     UNDO_MOVE: 'Отмена хода',
@@ -45,7 +48,10 @@ export const names: Record<CardType, string> = {
     CLEANSE: 'Очищение',
     SWAP: 'Перестановка',
     SCOUT: 'Разведка',
-    EXCHANGE: 'Обмен планами'
+    EXCHANGE: 'Обмен планами',
+    TRANSFORM: 'Превращение',
+    INFLATION: 'Инфляция',
+    SHRINKFLATION: 'Шринкфляция'
 };
 export const difficultyLabels: Record<string, string> = { easy: 'Лёгкая', normal: 'Обычная', hard: 'Сложная' };
 export const pieceNames: Record<string, string> = { P: 'Пешка', N: 'Конь', B: 'Слон', R: 'Ладья', Q: 'Ферзь', K: 'Король' };
@@ -78,7 +84,8 @@ export function selectionHint(card: Card | undefined, firstTarget: number | null
     if (card.type === 'EXCHANGE') return 'Выберите другую свою карту для обмена.';
     if (card.type === 'SCOUT') return 'Нажмите «Применить» и выберите порядок двух карт.';
     if (card.type === 'SACRIFICE') return firstTarget === null ? 'Выберите свою фигуру для жертвы.' : 'Выберите стартовую клетку для новой пешки.';
-    if (card.type.startsWith('EXPAND_') || card.type === 'DESTROY_CARD') return 'Нажмите «Применить». ';
+    if (card.type.startsWith('EXPAND_') || ['DESTROY_CARD', 'INFLATION', 'SHRINKFLATION'].includes(card.type)) return 'Нажмите «Применить». ';
+    if (card.type === 'TRANSFORM') return 'Выберите своего слона или коня.';
     if (card.type === 'SWAP' && firstTarget !== null) return 'Выберите вторую подсвеченную фигуру.';
     return 'Выберите подсвеченную клетку на доске.';
 }

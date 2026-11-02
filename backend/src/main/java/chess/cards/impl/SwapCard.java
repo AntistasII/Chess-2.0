@@ -1,5 +1,6 @@
 package chess.cards.impl;
 
+import chess.pieces.PieceType;
 import chess.cards.CardType;
 import chess.cards.CardDefinition;
 import chess.cards.CardContext;
@@ -19,7 +20,7 @@ public final class SwapCard extends TargetedCard {
 
     @Override
     public boolean canTarget(Piece piece, boolean own) {
-        return own && piece.type() != 'K';
+        return own && piece.type() != PieceType.KING;
     }
 
     @Override
@@ -35,8 +36,8 @@ public final class SwapCard extends TargetedCard {
                 if (!selectable(context, q)) continue;
                 if (Math.max(Math.abs(geometry.rank(second) - geometry.rank(first)),
                         Math.abs(geometry.file(second) - geometry.file(first))) != 1) continue;
-                if (p.type() == 'P' && edge(geometry.rank(second), board.height())) continue;
-                if (q.type() == 'P' && edge(geometry.rank(first), board.height())) continue;
+                if (p.type() == PieceType.PAWN && edge(geometry.rank(second), board.height())) continue;
+                if (q.type() == PieceType.PAWN && edge(geometry.rank(first), board.height())) continue;
                 actions.add(Action.card(this, first, second, ""));
             }
         }

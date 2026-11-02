@@ -23,49 +23,52 @@ public final class GameSaveTest {
         verify(snapshot(game).equals(snapshot(restored)), "Все данные партии восстановлены");
         verify(game.legalActions().stream().map(Action::id).toList().equals(
                 restored.legalActions().stream().map(Action::id).toList()), "Допустимые действия совпадают");
-        verify(!game.gameId.equals(restored.gameId), "Память ИИ отделяет загруженную ветку");
+        verify(!game.gameId().equals(restored.gameId()), "Память ИИ отделяет загруженную ветку");
         return restored;
     }
     public static void main(String[] args) throws Exception {
         // Старый JSON id/type должен восстанавливать карты с рабочим поведением,
         // а не только совпадающими полями.
         Game allCards = empty();
-        allCards.handLimit = 12;
-        allCards.board.set(1, PieceFactory.create(3, 'N', true));
-        allCards.board.set(2, PieceFactory.create(4, 'B', true));
-        allCards.board.set(8, PieceFactory.create(5, 'P', true));
-        allCards.board.set(48, PieceFactory.create(6, 'P', false));
-        allCards.board.set(57, PieceFactory.create(7, 'N', false));
-        allCards.board.get(1).protect();
-        allCards.captured.add(PieceFactory.create(8, 'P', true));
-        allCards.captured.add(PieceFactory.create(9, 'N', true));
-        allCards.nextPieceId = 10;
-        allCards.blackHand.add(CardCatalog.create(2000, CardType.SHIELD));
-        allCards.deck.add(CardCatalog.create(3000, CardType.FREEZE));
-        allCards.deck.add(CardCatalog.create(3001, CardType.SHIELD));
+        // 11, а не 12: «Инфляции» нужен запас до максимальной вместимости.
+        allCards.replaceSettings(new GameSettings(allCards.mode(), 11, allCards.difficulty()));
+        allCards.board().set(1, PieceFactory.create(3, 'N', true));
+        allCards.board().set(2, PieceFactory.create(4, 'B', true));
+        allCards.board().set(8, PieceFactory.create(5, 'P', true));
+        allCards.board().set(48, PieceFactory.create(6, 'P', false));
+        allCards.board().set(57, PieceFactory.create(7, 'N', false));
+        allCards.board().get(1).protect();
+        allCards.captured().add(PieceFactory.create(8, 'P', true));
+        allCards.captured().add(PieceFactory.create(9, 'N', true));
+        allCards.setNextPieceId(10);
+        allCards.hand(false).add(CardCatalog.create(2000, CardType.SHIELD));
+        allCards.cardPiles().deck().add(CardCatalog.create(3000, CardType.FREEZE));
+        allCards.cardPiles().deck().add(CardCatalog.create(3001, CardType.SHIELD));
         for (CardType type : CardType.values()) if (type != CardType.UNKNOWN) card(allCards, type);
-        allCards.whiteTurn = false;
+        allCards.setWhiteTurn(false);
         move(allCards, 57, 42); // Последний ход фигуры нужен карте отмены.
-        allCards.halfMoves = 9;
-        for (var held : allCards.whiteHand) {
+        allCards.setHalfMoves(9);
+        for (var held : allCards.hand(true)) {
             Game original = allCards.copy();
             Game loaded = GameSave.decode(JsonCodec.readObject(JsonCodec.toJson(GameSave.encode(original))));
             String id = original.legalActions().stream().filter(a -> a.cardId() == held.id()).findFirst().orElseThrow().id();
             original.play(id); loaded.play(id);
             verify(snapshot(original).equals(snapshot(loaded)), "Эффект карты после загрузки: " + held.type());
-            verify(loaded.discard.contains(held) && loaded.whiteHand.stream().noneMatch(c -> c.id() == held.id())
-                    && !loaded.whiteTurn, "Расход карты и смена очереди: " + held.type());
-            verify(loaded.halfMoves == (held.type() == CardType.SCOUT || held.type() == CardType.EXCHANGE ? 9 : 0),
+            verify(loaded.cardPiles().discard().contains(held) && loaded.hand(true).stream().noneMatch(c -> c.id() == held.id())
+                    && !loaded.whiteTurn(), "Расход карты и смена очереди: " + held.type());
+            boolean boardUnchanged = java.util.Set.of(CardType.SCOUT, CardType.EXCHANGE, CardType.INFLATION,
+                    CardType.SHRINKFLATION).contains(held.type());
+            verify(loaded.halfMoves() == (boardUnchanged ? 9 : 0),
                     "Счётчик полуходов: " + held.type());
         }
         Game game = chess.game.TestSessions.game("human", 5, "hard");
         move(game, 12, 28);
-        game.board.get(1).protect();
-        game.board.get(6).freezeUntil(game.ply + 4);
-        game.board.get(8).enableBoost();
-        game.board.get(57).sendToAstralUntil(game.ply + 3);
+        game.board().get(1).protect();
+        game.board().get(6).freezeUntil(game.ply() + 4);
+        game.board().get(8).enableBoost();
+        game.board().get(57).sendToAstralUntil(game.ply() + 3);
         Game restored = roundTrip(game);
-        String action = game.legalActions().stream().filter(a -> a.kind().equals("move")).findFirst().orElseThrow().id();
+        String action = game.legalActions().stream().filter(a -> a.isMove()).findFirst().orElseThrow().id();
         game.play(action); restored.play(action);
         verify(snapshot(game).equals(snapshot(restored)), "Продолжение даёт ту же позицию");
         game.expandBoard(1, 2, 1, 2);
@@ -74,7 +77,7 @@ public final class GameSaveTest {
         var card = card(scout, CardType.SCOUT);
         scout.startScout(card.id());
         roundTrip(scout);
-        game.result = "draw";
+        game.setResult(GameResult.CLAIMED_DRAW);
         roundTrip(game);
         GameSession session = chess.game.TestSessions.create(position -> "draw");
         long version = ((Number) session.state().get("version")).longValue();

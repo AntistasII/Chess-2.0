@@ -30,7 +30,7 @@ class AiMatchBench {
             Game game = TestSessions.game("ai", 3, level);
             String oldLevel = System.getProperty("bench.oldLevel", level);
             int plies = 0;
-            while (game.result.isEmpty() && plies < maxPlies) {
+            while (game.result() == GameResult.IN_PROGRESS && plies < maxPlies) {
                 boolean freshTurn = game.whiteTurn() == freshWhite;
                 long t = System.nanoTime();
                 String id;
@@ -38,13 +38,14 @@ class AiMatchBench {
                     if (freshTurn) id = fresh.choose(game);
                     else {
                         // Уровень соперника задаётся отдельно, если нужно сравнить разные уровни.
-                        game.difficulty = oldLevel;
+                        var own = game.settings();
+                        game.replaceSettings(new GameSettings(own.mode(), own.handLimit(), Difficulty.fromId(oldLevel)));
                         id = legacy.choose(game);
-                        game.difficulty = level;
+                        game.replaceSettings(own);
                     }
                 } catch (RuntimeException e) {
                     System.out.println("  exception in " + (freshTurn ? "new" : "old") + ": " + e);
-                    game.result = freshTurn ? (freshWhite ? "black" : "white") : (freshWhite ? "white" : "black");
+                    game.setResult(GameResult.checkmate(!freshTurn == freshWhite));
                     break;
                 }
                 long dt = System.nanoTime() - t;
@@ -52,7 +53,7 @@ class AiMatchBench {
                 game.play(id);
                 plies++;
             }
-            String r = game.result;
+            String r = game.result().id();
             double s;
             if (r.equals("white") || r.equals("blackResigned")) s = freshWhite ? 1 : 0;
             else if (r.equals("black") || r.equals("whiteResigned")) s = freshWhite ? 0 : 1;
@@ -77,7 +78,7 @@ class AiMatchBench {
         for (int s = 0; s < game.boardGeometry().size(); s++) {
             var p = game.pieceAt(s);
             if (p == null) continue;
-            int v = switch (p.type()) { case 'P' -> 100; case 'N' -> 320; case 'B' -> 330; case 'R' -> 500; case 'Q' -> 900; default -> 0; };
+            int v = switch (p.type()) { case PAWN -> 100; case KNIGHT -> 320; case BISHOP -> 330; case ROOK -> 500; case QUEEN -> 900; case KING -> 0; };
             total += p.white() == side ? v : -v;
         }
         return total;

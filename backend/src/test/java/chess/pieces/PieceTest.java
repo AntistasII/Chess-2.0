@@ -18,7 +18,7 @@ class PieceTest {
             assertInstanceOf(types[i], copy);
             assertNotSame(original, copy);
             assertEquals(17, copy.id());
-            assertEquals(codes.charAt(i), copy.type());
+            assertEquals(codes.charAt(i), copy.type().code());
             assertFalse(copy.white());
             assertTrue(copy.moved());
             assertTrue(copy.boost());
@@ -41,8 +41,8 @@ class PieceTest {
         pawn.protect();
         pawn.freezeUntil(9);
         for (char type : "QRBN".toCharArray()) {
-            Piece promoted = pawn.promoteTo(type);
-            assertEquals(type, promoted.type());
+            Piece promoted = pawn.promoteTo(PieceType.fromCode(type));
+            assertEquals(type, promoted.type().code());
             assertFalse(promoted instanceof Pawn);
             assertEquals(23, promoted.id());
             assertTrue(promoted.white());
@@ -50,8 +50,8 @@ class PieceTest {
             assertTrue(promoted.shield());
             assertEquals(9, promoted.frozenUntil());
         }
-        assertEquals('P', pawn.type());
-        assertThrows(IllegalArgumentException.class, () -> pawn.promoteTo('K'));
+        assertEquals('P', pawn.type().code());
+        assertThrows(IllegalArgumentException.class, () -> pawn.promoteTo(PieceType.KING));
         assertThrows(IllegalArgumentException.class, () -> PieceFactory.create(1, '?', true));
     }
 }

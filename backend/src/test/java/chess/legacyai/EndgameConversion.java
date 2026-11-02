@@ -14,7 +14,7 @@ final class EndgameConversion {
             if (p == null) continue;
             if (p.white() == side) {
                 own += PositionEvaluator.materialValue(p.type());
-                if (!p.astral() && (p.type() == 'Q' || p.type() == 'R')) heavy = true;
+                if (!p.astral() && (p.type() == chess.pieces.PieceType.QUEEN || p.type() == chess.pieces.PieceType.ROOK)) heavy = true;
             } else enemy += PositionEvaluator.materialValue(p.type());
         }
         return heavy && enemy <= 500 && own - enemy >= 450;
@@ -25,7 +25,7 @@ final class EndgameConversion {
         int ownKing = -1, enemyKing = -1;
         for (int s = 0; s < game.boardGeometry().size(); s++) {
             var p = game.pieceAt(s);
-            if (p != null && p.type() == 'K') {
+            if (p != null && p.type() == chess.pieces.PieceType.KING) {
                 if (p.white() == side) ownKing = s; else enemyKing = s;
             }
         }
@@ -48,8 +48,8 @@ final class EndgameConversion {
         for(int s=0;s<geo.size();s++) {
             var p=game.pieceAt(s);
             if(p==null || p.white()!=side)continue;
-            if(p.type()=='Q')return 0;
-            if(p.type()=='R' && !p.astral())rook=s;
+            if(p.type() == chess.pieces.PieceType.QUEEN)return 0;
+            if(p.type() == chess.pieces.PieceType.ROOK && !p.astral())rook=s;
         }
         if(rook<0)return 0;
         int dr=Math.abs(geo.rank(rook)-geo.rank(enemyKing)),df=Math.abs(geo.file(rook)-geo.file(enemyKing));

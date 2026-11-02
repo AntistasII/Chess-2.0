@@ -32,7 +32,7 @@ final class OpponentMemory {
         Map<Integer, String> current = new HashMap<>();
         for (int s = 0; s < game.boardGeometry().size(); s++) {
             var p = game.pieceAt(s);
-            if (p != null && p.white() == game.whiteTurn()) current.put(p.id(), "" + p.type());
+            if (p != null && p.white() == game.whiteTurn()) current.put(p.id(), String.valueOf(p.type().code()));
         }
         int ply = game.moveHistory().size();
         if (previousGame.equals(game.gameId()) && previousSide == game.whiteTurn() && ply > previousPly) {

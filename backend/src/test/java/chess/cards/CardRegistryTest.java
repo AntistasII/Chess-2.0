@@ -13,8 +13,8 @@ class CardRegistryTest {
     @Test void discoversClassesAndBuildsIndependentCards() {
         var registry = CardRegistry.scan("chess.cards.impl");
         var deck = registry.newDeck();
-        assertEquals(44, deck.size());
-        assertEquals(44, deck.stream().map(Card::id).distinct().count());
+        assertEquals(50, deck.size());
+        assertEquals(50, deck.stream().map(Card::id).distinct().count());
         assertTrue(deck.stream().noneMatch(c -> c.type() == CardType.UNKNOWN));
         for (CardType type : CardType.values()) {
             assertEquals(type == CardType.UNKNOWN ? 0 : 2,

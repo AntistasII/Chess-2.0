@@ -1,5 +1,6 @@
 server:
   port: ${PORT:8080}
+  save-file: data/saved-game.json
 
 openai:
   response-timeout: 10s

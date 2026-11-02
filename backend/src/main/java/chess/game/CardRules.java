@@ -4,7 +4,7 @@ import chess.board.Board;
 import chess.cards.Card;
 import chess.cards.CardContext;
 import chess.pieces.Piece;
-import chess.pieces.PieceFactory;
+import chess.pieces.PieceType;
 
 import java.util.List;
 
@@ -25,70 +25,57 @@ final class CardRules {
     }
 
     void apply(Action action) {
-        var hand = game.hand(game.whiteTurn);
-        Card card = hand.stream().filter(c -> c.id() == action.cardId()).findFirst().orElseThrow();
-        hand.remove(card);
-        game.discard.add(card);
+        Card card = game.cardPiles().spend(game.whiteTurn(), action.cardId());
         card.apply(context, action);
-        if (card.resetsHalfMoveClock()) game.halfMoves = 0;
+        if (card.resetsHalfMoveClock()) game.setHalfMoves(0);
     }
 
     /**
-     * Адаптер не раскрывает внутренние поля Game за пределами игрового пакета.
+     * Адаптер даёт картам только нужные операции и не раскрывает внутреннее устройство Game.
      */
     private record Context(Game game) implements CardContext {
+        public Board board() { return game.board(); }
+
         public boolean blocked(int square) { return game.blocked(square); }
-        public boolean hasSquareEffect(int square) { return game.squareEffects.containsKey(square) && game.squareEffects.get(square).visibleTo(game.whiteTurn); }
-        public void placeSquareEffect(int square, SquareEffect effect) { game.squareEffects.put(square, effect); }
+
+        public boolean hasSquareEffect(int square) { return game.effects().visibleAt(square, game.whiteTurn()); }
+
+        public void placeSquareEffect(int square, SquareEffect effect) { game.effects().place(square, effect); }
+
         public void expandBoard(int left, int right, int bottom, int top) { game.expandBoard(left, right, bottom, top); }
-        public int undoTarget() { return game.lastMove != null && game.lastMove.white() != game.whiteTurn ? game.lastMove.to() : -1; }
+
+        public int undoTarget() {
+            MoveUndo last = game.lastMove();
+            return last != null && last.white() != game.whiteTurn() ? last.to() : -1;
+        }
+
         public void undoLastMove(int freezeUntil) {
             if (undoTarget() < 0) throw new IllegalStateException("Нет хода для отмены");
-            game.lastMove.restore(game, freezeUntil);
+            game.lastMove().restore(game, freezeUntil);
         }
 
-        public Board board() {
-            return game.board;
-        }
+        public boolean whiteTurn() { return game.whiteTurn(); }
 
-        public boolean whiteTurn() {
-            return game.whiteTurn;
-        }
+        public int ply() { return game.ply(); }
 
-        public int ply() {
-            return game.ply;
-        }
+        public List<Card> hand(boolean white) { return game.cardPiles().hand(white); }
 
-        public List<Card> hand(boolean white) {
-            return game.hand(white);
-        }
+        public List<Card> deck() { return game.cardPiles().deck(); }
 
-        public List<Card> deck() {
-            return game.deck;
-        }
+        public List<Card> discard() { return game.cardPiles().discard(); }
 
-        public List<Card> discard() {
-            return game.discard;
-        }
+        public List<Piece> captured() { return game.captured(); }
 
-        public List<Piece> captured() {
-            return game.captured;
-        }
+        public List<Integer> startingSquares(PieceType type) { return game.startingSquares(type, game.whiteTurn()); }
 
-        public List<Integer> startingSquares(char type) {
-            return game.startingSquares(type, game.whiteTurn);
-        }
+        public void prepareScoutDeck() { game.cardPiles().prepareScout(); }
 
-        public void prepareScoutDeck() {
-            game.ensureScoutDeck();
-        }
+        public Piece newPiece(PieceType type) { return game.newPiece(type, game.whiteTurn()); }
 
-        public Piece newPiece(char type) {
-            return PieceFactory.create(game.nextPieceId++, type, game.whiteTurn);
-        }
+        public void disableCastle(Piece piece, int square) { game.disableCastle(piece, square); }
 
-        public void disableCastle(Piece piece, int square) {
-            game.disableCastle(piece, square);
-        }
+        public int handLimit(boolean white) { return game.cardPiles().limit(white); }
+
+        public void setHandLimit(boolean white, int limit) { game.cardPiles().setLimit(white, limit); }
     }
 }

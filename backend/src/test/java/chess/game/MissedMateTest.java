@@ -29,27 +29,27 @@ public class MissedMateTest {
     }
     @Test void distinguishesVerifiedMateFromThreatAgainstUnknownHand() throws Exception {
         var game=position();
-        var known=TacticalHints.forPosition(game).stream().filter(h->h.get("actionId").equals("move:13:14:")).findFirst().orElseThrow();
-        var hidden=TacticalHints.forPosition(game.observationForCurrentPlayer()).stream().filter(h->h.get("actionId").equals("move:13:14:")).findFirst().orElseThrow();
-        assertEquals(true,known.get("mateInOne"));
-        assertEquals(false,hidden.get("mateInOne"));
-        assertEquals(true,hidden.get("mateThreat"));
+        var known=TacticalHints.forPosition(game).stream().filter(h->h.actionId().equals("move:13:14:")).findFirst().orElseThrow();
+        var hidden=TacticalHints.forPosition(game.observationForCurrentPlayer()).stream().filter(h->h.actionId().equals("move:13:14:")).findFirst().orElseThrow();
+        assertEquals(true,known.mateInOne());
+        assertEquals(false,hidden.mateInOne());
+        assertEquals(true,hidden.mateThreat());
     }
 
     @Test void unknownCardsDoNotLeakAndRealCardRescueStillPreventsGameOver() throws Exception {
         var original=position();
         var withRescue=position();
-        withRescue.whiteHand.clear();
+        withRescue.hand(true).clear();
         var astral=chess.cards.CardCatalog.create(3000,chess.cards.CardType.ASTRAL);
-        withRescue.whiteHand.add(astral);
-        withRescue.whiteHand.add(chess.cards.CardCatalog.create(3001,chess.cards.CardType.CLEANSE));
-        var actual=TacticalHints.forPosition(withRescue).stream().filter(h->h.get("actionId").equals("move:13:14:")).findFirst().orElseThrow();
-        assertEquals(false,actual.get("mateInOne")); assertEquals(false,actual.get("mateThreat"));
+        withRescue.hand(true).add(astral);
+        withRescue.hand(true).add(chess.cards.CardCatalog.create(3001,chess.cards.CardType.CLEANSE));
+        var actual=TacticalHints.forPosition(withRescue).stream().filter(h->h.actionId().equals("move:13:14:")).findFirst().orElseThrow();
+        assertEquals(false,actual.mateInOne()); assertEquals(false,actual.mateThreat());
         var hiddenOriginal=TacticalHints.forPosition(original.observationForCurrentPlayer());
         var hiddenRescue=TacticalHints.forPosition(withRescue.observationForCurrentPlayer());
         assertEquals(hiddenOriginal,hiddenRescue,"Unknown hand contents must not influence AI hints");
         withRescue.play("move:13:14:");
-        assertTrue(withRescue.result.isEmpty(),"Potential mate must not end the game when a real escape exists");
+        assertTrue(withRescue.result() == GameResult.IN_PROGRESS,"Potential mate must not end the game when a real escape exists");
         RulesTest.cast(withRescue,astral,14);
         assertFalse(withRescue.inCheck(true));
     }

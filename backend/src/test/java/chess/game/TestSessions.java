@@ -13,7 +13,7 @@ public final class TestSessions {
     private TestSessions() {}
 
     public static Game game(String mode, int handLimit, String difficulty) {
-        return new Game(mode, handLimit, difficulty, defaults().backRank());
+        return new Game(GameSettings.parse(mode, handLimit, difficulty), defaults().backRank());
     }
 
     public static chess.ai.Ai ai() { return new chess.ai.Ai(defaults()); }

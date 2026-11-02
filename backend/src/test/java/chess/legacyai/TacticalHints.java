@@ -31,13 +31,13 @@ public final class TacticalHints {
             boolean mateInOne = mateThreat && next.cards(!side).stream()
                     .noneMatch(c -> c.type() == chess.cards.CardType.UNKNOWN);
             for (var reply : replies) {
-                if (!reply.kind().equals("move")) continue;
+                if (!reply.isMove()) continue;
                 Game afterReply = next.simulate(reply);
                 // Даже тихий шах может быть матом. У защищающейся стороны
                 // остаются её реальные карты, поэтому учитываем карточные спасения.
                 if (afterReply.inCheck(side)) {
                     if (afterReply.legalActions().isEmpty()) mateReplyId = reply.id();
-                    else if (afterReply.pieceAt(reply.to()).type() == 'N') {
+                    else if (afterReply.pieceAt(reply.to()).type() == chess.pieces.PieceType.KNIGHT) {
                         int fork = CheckingForkAnalysis.materialAfterBestDefence(afterReply, side, baseline, reply.to());
                         if (fork < material(afterReply, side) - baseline && fork < worstAfterRecapture) {
                             worstAfterRecapture = fork;
@@ -62,7 +62,7 @@ public final class TacticalHints {
                 }
                 // Проверяем взятия (включая en passant) и превращения, без скрытых чужих карт.
                 if (next.pieceAt(reply.to()) == null && !reply.option().matches("[QRBN]")
-                        && !(next.pieceAt(reply.from()).type() == 'P'
+                        && !(next.pieceAt(reply.from()).type() == chess.pieces.PieceType.PAWN
                             && reply.from() % next.boardGeometry().width() != reply.to() % next.boardGeometry().width())) continue;
                 int value = material(afterReply, side) - baseline;
                 if (value < worst) { worst = value; replyId = reply.id(); }

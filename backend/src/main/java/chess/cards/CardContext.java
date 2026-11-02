@@ -2,6 +2,7 @@ package chess.cards;
 
 import chess.board.Board;
 import chess.pieces.Piece;
+import chess.pieces.PieceType;
 
 import java.util.List;
 
@@ -35,11 +36,17 @@ public interface CardContext {
 
     List<Piece> captured();
 
-    List<Integer> startingSquares(char type);
+    List<Integer> startingSquares(PieceType type);
 
     void prepareScoutDeck();
 
-    Piece newPiece(char type);
+    Piece newPiece(PieceType type);
 
     void disableCastle(Piece piece, int square);
+
+    /** Вместимость руки игрока. */
+    int handLimit(boolean white);
+
+    /** Меняет вместимость руки; допустимы значения от 1 до 12. */
+    void setHandLimit(boolean white, int limit);
 }

@@ -1,5 +1,6 @@
 package chess.cards.impl;
 
+import chess.pieces.PieceType;
 import chess.cards.*;
 import chess.game.Action;
 import chess.pieces.Piece;
@@ -13,8 +14,8 @@ public final class SacrificeCard extends Card {
         var actions = new ArrayList<Action>();
         for (int square = 0; square < context.board().size(); square++) {
             Piece p = context.board().get(square);
-            if (p == null || p.white() != context.whiteTurn() || p.astral() || p.type() == 'P' || p.type() == 'K') continue;
-            for (int start : context.startingSquares('P'))
+            if (p == null || p.white() != context.whiteTurn() || p.astral() || p.type() == PieceType.PAWN || p.type() == PieceType.KING) continue;
+            for (int start : context.startingSquares(PieceType.PAWN))
                 if ((start == square || context.board().get(start) == null) && !context.blocked(start))
                     actions.add(Action.card(this, square, start, ""));
         }
@@ -25,6 +26,6 @@ public final class SacrificeCard extends Card {
         context.disableCastle(p, action.to());
         context.board().set(action.to(), null);
         // Жертва удаляется из партии, а не попадает в список доступных для возрождения.
-        context.board().set(action.other(), context.newPiece('P'));
+        context.board().set(action.other(), context.newPiece(PieceType.PAWN));
     }
 }

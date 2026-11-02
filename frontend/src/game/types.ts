@@ -1,4 +1,4 @@
-export type CardType = 'PAWN_BOOST' | 'KING_BOOST' | 'REVIVE_PAWN' | 'REVIVE_PIECE' | 'CONVERT' | 'FREEZE' | 'ASTRAL' | 'SHIELD' | 'CLEANSE' | 'SWAP' | 'SCOUT' | 'EXCHANGE' | 'UNDO_MOVE' | 'EXPAND_BOTTOM' | 'EXPAND_TOP' | 'EXPAND_LEFT' | 'EXPAND_RIGHT' | 'DESTROY_CARD' | 'SACRIFICE' | 'TRAP' | 'HIDDEN_TRAP' | 'WHITE_HOLE';
+export type CardType = 'PAWN_BOOST' | 'KING_BOOST' | 'REVIVE_PAWN' | 'REVIVE_PIECE' | 'CONVERT' | 'FREEZE' | 'ASTRAL' | 'SHIELD' | 'CLEANSE' | 'SWAP' | 'SCOUT' | 'EXCHANGE' | 'UNDO_MOVE' | 'EXPAND_BOTTOM' | 'EXPAND_TOP' | 'EXPAND_LEFT' | 'EXPAND_RIGHT' | 'DESTROY_CARD' | 'SACRIFICE' | 'TRAP' | 'HIDDEN_TRAP' | 'WHITE_HOLE' | 'TRANSFORM' | 'INFLATION' | 'SHRINKFLATION';
 export type Card = {
     id: number;
     type: CardType;
@@ -56,6 +56,8 @@ export type State = {
     mode: string;
     difficulty: string;
     handLimit: number;
+    /** Вместимость руки соперника: «Инфляция» и «Шринкфляция» меняют её отдельно для каждого. */
+    enemyHandLimit: number;
     version: number;
     gameId?: string;
     ply: number;

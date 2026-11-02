@@ -22,7 +22,7 @@ public abstract class Piece {
         this.white = white;
     }
 
-    public abstract char type();
+    public abstract PieceType type();
 
     /** Кандидаты на ход; окончательную безопасность короля проверяет игровой движок. */
     public abstract List<Action> moves(MovementContext context, int from);
@@ -127,10 +127,15 @@ public abstract class Piece {
         return copyAs(type());
     }
 
+    /** Та же фигура (идентификатор, сторона, эффекты) другого вида — для карты «Превращение». */
+    public Piece withType(PieceType type) {
+        return copyAs(type);
+    }
+
     /**
      * Копирование и превращение используют один способ переноса состояния.
      */
-    protected final Piece copyAs(char type) {
+    protected final Piece copyAs(PieceType type) {
         Piece copy = PieceFactory.create(id, type, white);
         copy.moved = moved;
         copy.boost = boost;

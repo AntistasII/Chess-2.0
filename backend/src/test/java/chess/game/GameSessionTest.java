@@ -25,21 +25,21 @@ public final class GameSessionTest {
 
     public static void main(String[] args) throws Exception {
         Game network = chess.game.TestSessions.game("network", 3, "normal");
-        network.whiteHand.add(CardCatalog.create(1000, CardType.SCOUT));
-        network.blackHand.add(CardCatalog.create(1001, CardType.SHIELD));
+        network.hand(true).add(CardCatalog.create(1000, CardType.SCOUT));
+        network.hand(false).add(CardCatalog.create(1001, CardType.SHIELD));
         GameSession networkSession = chess.game.TestSessions.create(network, g -> { throw new AssertionError("No network AI"); });
         networkSession.scout(0, 1000);
         check(((List<?>)networkSession.playerState(true).get("scouting")).size() == 2, "Owner sees scout cards");
         check(((List<?>)networkSession.playerState(false).get("scouting")).isEmpty(), "Remote player cannot see opponent scouting");
         check(((List<?>)networkSession.playerState(false).get("actions")).isEmpty(), "Remote player cannot see scout action IDs");
         String scoutChoice = network.legalActions().get(0).id();
-        networkSession.play(network.version, scoutChoice);
+        networkSession.play(network.version(), scoutChoice);
         check(((List<?>)networkSession.playerState(false).get("hand")).size() == 1, "Black hand remains visible on black turn");
         check(((List<?>)networkSession.playerState(true).get("hand")).isEmpty(), "Host view does not switch to black hand");
-        check(GameSave.decode(GameSave.encode(network)).mode.equals("network"), "Save preserves network mode");
+        check(GameSave.decode(GameSave.encode(network)).mode().id().equals("network"), "Save preserves network mode");
         GameSession session = chess.game.TestSessions.create(chess.game.TestSessions.ai());
         Map<String, Object> initial = session.state();
-        check(initial.keySet().equals(Set.of("board", "boardSize", "squareEffects", "castlingRights", "whiteTurn", "mode", "difficulty", "handLimit",
+        check(initial.keySet().equals(Set.of("board", "boardSize", "squareEffects", "castlingRights", "whiteTurn", "mode", "difficulty", "handLimit", "enemyHandLimit",
                 "version", "gameId", "ply", "hand", "enemyCards", "handWhite", "deckCount", "discardCount", "check",
                 "result", "canClaimDraw", "actions", "captured", "history", "scouting", "defaultMode", "newGameDefaults")), "Public API includes configured game defaults");
         check(((List<?>) initial.get("board")).size() == 32, "Initial board projection");
@@ -85,22 +85,22 @@ public final class GameSessionTest {
         }
 
         Game game = chess.game.TestSessions.game("ai", 3, "normal");
-        game.whiteHand.add(CardCatalog.create(101, CardType.SHIELD));
-        game.blackHand.add(CardCatalog.create(102, CardType.CONVERT));
+        game.hand(true).add(CardCatalog.create(101, CardType.SHIELD));
+        game.hand(false).add(CardCatalog.create(102, CardType.CONVERT));
         Game observation = game.observationForCurrentPlayer();
-        check(observation.whiteHand.get(0).type() == CardType.SHIELD, "AI retains its own known cards");
-        check(observation.blackHand.get(0).type() == CardType.UNKNOWN, "AI observation masks enemy card identities");
-        check(observation.deck.stream().allMatch(c -> c.type() == CardType.UNKNOWN), "AI observation masks deck order and identities");
-        check(game.blackHand.get(0).type() == CardType.CONVERT && game.deck.stream().noneMatch(c -> c.type() == CardType.UNKNOWN),
+        check(observation.hand(true).get(0).type() == CardType.SHIELD, "AI retains its own known cards");
+        check(observation.hand(false).get(0).type() == CardType.UNKNOWN, "AI observation masks enemy card identities");
+        check(observation.cardPiles().deck().stream().allMatch(c -> c.type() == CardType.UNKNOWN), "AI observation masks deck order and identities");
+        check(game.hand(false).get(0).type() == CardType.CONVERT && game.cardPiles().deck().stream().noneMatch(c -> c.type() == CardType.UNKNOWN),
                 "Masking does not change the live party");
         // Поиск должен сохранить все эффекты на копии и не менять исходную фигуру.
-        Piece piece = game.board.get(8);
+        Piece piece = game.board().get(8);
         piece.enableBoost();
         piece.protect();
         piece.freezeUntil(4);
         piece.sendToAstralUntil(6);
         Game search = game.copy();
-        Piece copied = search.board.get(8);
+        Piece copied = search.board().get(8);
         check(copied != piece && copied.id() == piece.id() && copied.boost() && copied.shield()
                 && copied.frozenUntil() == 4 && copied.astralUntil() == 6, "Search preserves all piece effects");
         copied.clearEffects();
@@ -116,26 +116,26 @@ public final class GameSessionTest {
         check(shield.hashCode() == CardCatalog.create(500, CardType.SHIELD).hashCode()
                 && shield.name().equals("Щит"), "Card value contract and public name preserved");
 
-        observation.board.get(8).enableBoost();
-        check(!game.board.get(8).boost(), "Search pieces are isolated from live pieces");
+        observation.board().get(8).enableBoost();
+        check(!game.board().get(8).boost(), "Search pieces are isolated from live pieces");
 
         // Публичное чтение через границы пакетов не даёт менять живую доску или руку.
         Piece externalPiece = game.pieceAt(8);
         externalPiece.protect();
-        check(!game.board.get(8).shield(), "External piece view cannot mutate the live board");
+        check(!game.board().get(8).shield(), "External piece view cannot mutate the live board");
         try {
             game.cards(true).clear();
             throw new AssertionError("External caller changed the live hand");
         } catch (UnsupportedOperationException expected) {
-            check(game.whiteHand.size() == 1, "Public card list is immutable");
+            check(game.hand(true).size() == 1, "Public card list is immutable");
         }
         Game simulated = game.simulate(game.legalActions().stream()
                 .filter(a -> a.from() == 12 && a.to() == 28).findFirst().orElseThrow());
-        check(simulated.board.get(28) != null && game.board.get(28) == null && game.whiteTurn
-                && game.version == 0, "Public simulation leaves the live party untouched");
+        check(simulated.board().get(28) != null && game.board().get(28) == null && game.whiteTurn()
+                && game.version() == 0, "Public simulation leaves the live party untouched");
 
         // Сессия подключает произвольную стратегию и скрывает данные до её вызова.
-        game.whiteTurn = false;
+        game.setWhiteTurn(false);
         GameSession plugged = chess.game.TestSessions.create(game, position -> {
             check(!position.whiteTurn(), "Injected strategy receives the current side");
             check(position.cards(true).get(0).type() == CardType.UNKNOWN
@@ -145,49 +145,49 @@ public final class GameSessionTest {
             position.play("draw");
             return "draw";
         });
-        plugged.runAi(game.version);
-        check(game.ply == 1 && game.whiteTurn && game.blackHand.size() == 2
-                && game.whiteHand.get(0).type() == CardType.SHIELD,
+        plugged.runAi(game.version());
+        check(game.ply() == 1 && game.whiteTurn() && game.hand(false).size() == 2
+                && game.hand(true).get(0).type() == CardType.SHIELD,
                 "Injected strategy cannot apply an extra live turn");
 
         // ChatGPT видит свою руку, но не карты человека; браузер получает обратное представление.
         Game remote = chess.game.TestSessions.game("chatgpt", 3, "normal");
-        remote.whiteHand.add(CardCatalog.create(901, CardType.SHIELD));
-        remote.blackHand.add(CardCatalog.create(902, CardType.SCOUT));
-        remote.whiteTurn = false;
+        remote.hand(true).add(CardCatalog.create(901, CardType.SHIELD));
+        remote.hand(false).add(CardCatalog.create(902, CardType.SCOUT));
+        remote.setWhiteTurn(false);
         GameSession remoteSession = chess.game.TestSessions.create(remote, p -> { throw new AssertionError(); }, p -> {
             check(p.cards(true).get(0).type() == CardType.UNKNOWN, "ChatGPT cannot see human cards");
             var view = p.opponentState();
-            check(view.get("handWhite").equals(false) && ((List<?>) view.get("hand")).size() == (p.scouting >= 0 ? 0 : 1),
+            check(view.get("handWhite").equals(false) && ((List<?>) view.get("hand")).size() == (p.scouting() >= 0 ? 0 : 1),
                     "ChatGPT receives its own hand");
             if (((List<?>) view.get("scouting")).isEmpty())
                 return p.legalActions().stream().filter(a -> a.cardId() == 902).findFirst().orElseThrow().id();
             check(((List<?>) view.get("scouting")).stream().noneMatch(c -> ((Map<?, ?>) c).get("type").equals("UNKNOWN")),
                     "ChatGPT scout reveals top two cards");
-            check(p.deck.subList(2, p.deck.size()).stream().allMatch(c -> c.type() == CardType.UNKNOWN),
+            check(p.cardPiles().deck().subList(2, p.cardPiles().deck().size()).stream().allMatch(c -> c.type() == CardType.UNKNOWN),
                     "Scout does not reveal rest of deck");
             return p.legalActions().get(0).id();
         });
         check(((List<?>) remoteSession.state().get("actions")).isEmpty(), "Human cannot see opponent legal card actions");
-        try { remoteSession.play(remote.version, "draw"); throw new AssertionError(); }
-        catch (IllegalArgumentException expected) { check(remote.ply == 0, "Human cannot move for ChatGPT"); }
-        remoteSession.runAi(remote.version);
-        check(remote.scouting == 902 && !remote.whiteTurn && remote.ply == 0, "Scout commits before revealing cards");
+        try { remoteSession.play(remote.version(), "draw"); throw new AssertionError(); }
+        catch (IllegalArgumentException expected) { check(remote.ply() == 0, "Human cannot move for ChatGPT"); }
+        remoteSession.runAi(remote.version());
+        check(remote.scouting() == 902 && !remote.whiteTurn() && remote.ply() == 0, "Scout commits before revealing cards");
         check(((List<?>) remoteSession.state().get("scouting")).isEmpty(), "Scout is hidden from human browser");
-        remoteSession.runAi(remote.version);
-        check(remote.whiteTurn && remote.ply == 1 && remote.scouting < 0, "Scout finishes a single opponent turn");
+        remoteSession.runAi(remote.version());
+        check(remote.whiteTurn() && remote.ply() == 1 && remote.scouting() < 0, "Scout finishes a single opponent turn");
 
         Game failing = chess.game.TestSessions.game("chatgpt", 3, "normal");
-        failing.whiteTurn = false;
+        failing.setWhiteTurn(false);
         GameSession failingSession = chess.game.TestSessions.create(failing, p -> "draw", p -> "invalid");
         try { failingSession.runAi(0); throw new AssertionError(); }
-        catch (IllegalArgumentException expected) { check(failing.version == 0 && failing.ply == 0, "Invalid model answer cannot mutate game"); }
+        catch (IllegalArgumentException expected) { check(failing.version() == 0 && failing.ply() == 0, "Invalid model answer cannot mutate game"); }
 
         // Долгий запрос не блокирует новую партию; ответ старой партии отбрасывается.
         var started = new java.util.concurrent.CountDownLatch(1);
         var release = new java.util.concurrent.CountDownLatch(1);
         Game pending = chess.game.TestSessions.game("chatgpt", 3, "normal");
-        pending.whiteTurn = false;
+        pending.setWhiteTurn(false);
         GameSession pendingSession = chess.game.TestSessions.create(pending, p -> "draw", p -> {
             started.countDown();
             try { release.await(); } catch (InterruptedException e) { throw new RuntimeException(e); }

@@ -77,7 +77,7 @@ export function App() {
                             <strong>{game.mode === 'chatgpt' ? 'ChatGPT' : game.mode === 'ai' ? (game.offlineApp ? 'Компьютер' : 'Локальный ИИ') : 'Соперник'}</strong><small>{visibleWhite ? 'Чёрные' : 'Белые'}{game.mode === 'ai' ? ` · ${difficultyLabels[game.difficulty]}` : ''}</small>
                         </div>
                     </div>
-                    <div className="enemy-hand" title={`${game.enemyCards} скрытых карт`}><Icon type="deck"/><span>{game.enemyCards}</span></div>
+                    <div className="enemy-hand" title={`${game.enemyCards} скрытых карт, вмещается ${game.enemyHandLimit}`}><Icon type="deck"/><span>{game.enemyCards} / {game.enemyHandLimit}</span></div>
                 </div>
                 <div className="board-space"><ChessBoard gameId={game.gameId} effects={covered ? game.squareEffects?.filter(e => e.type !== 'HIDDEN_TRAP') : game.squareEffects} board={game.board} size={game.boardSize} check={game.check} whiteTurn={game.whiteTurn} flipped={flipped} selected={selected} firstTarget={firstTarget} targets={targets} spellActive={Boolean(activeCard)} lastAction={game.history.at(-1) ?? ''} onSquare={clickSquare}/></div>
                 <div className="player-row bottom">

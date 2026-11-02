@@ -48,7 +48,7 @@ final class SearchEngine {
                     - MovePreferences.repeatedActionPenalty(game, action)
                     - MovePreferences.reversalPenalty(game, action, next)
                     - MovePreferences.castlingLossPenalty(game, action, next)
-                    - (action.kind().equals("draw") && EndgameConversion.active(game, side) ? 90 : 0);
+                    - (action.isDraw() && EndgameConversion.active(game, side) ? 90 : 0);
             scores.put(action.id(), score);
             if (score > bestScore) { bestScore = score; best = action.id(); }
         }

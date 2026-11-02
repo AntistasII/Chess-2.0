@@ -9,7 +9,7 @@ final class MovePreferences {
 
     static double castlingLossPenalty(Game position, Action action, Game next) {
         boolean side = position.whiteTurn();
-        if (!action.kind().equals("move") || action.option().equals("castle") || position.inCheck(side)
+        if (!action.isMove() || action.isCastling() || position.inCheck(side)
                 || next.inCheck(!side) || position.pieceAt(action.to()) != null) return 0;
         // В окончании активность короля важнее сохранения рокировки.
         if (KingSafety.attackingMaterial(position, !side) < 900) return 0;
@@ -19,12 +19,9 @@ final class MovePreferences {
     }
 
     static double repeatedActionPenalty(Game position, Action action) {
-        if (!EndgameConversion.active(position, position.whiteTurn()) || !action.kind().equals("move")
+        if (!EndgameConversion.active(position, position.whiteTurn()) || !action.isMove()
                 || !action.option().isEmpty() || position.inCheck(position.whiteTurn())) return 0;
-        String name = switch(position.pieceAt(action.from()).type()) {
-            case 'K' -> "Король"; case 'Q' -> "Ферзь"; case 'R' -> "Ладья";
-            case 'B' -> "Слон"; case 'N' -> "Конь"; default -> "Пешка";
-        };
+        String name = position.pieceAt(action.from()).type().title();
         String label=(position.whiteTurn()?"Белые: ":"Чёрные: ")+name+" "
                 +position.boardGeometry().square(action.from())+" → "+position.boardGeometry().square(action.to());
         var history=position.moveHistory();int repeats=0;
@@ -38,15 +35,15 @@ final class MovePreferences {
 
     static double reversalPenalty(Game position, Action action, Game next) {
         boolean conversion = EndgameConversion.active(position, position.whiteTurn());
-        if (!action.kind().equals("move") || !action.option().isEmpty()
+        if (!action.isMove() || !action.option().isEmpty()
                 || position.inCheck(position.whiteTurn()) || !conversion && next.inCheck(!position.whiteTurn())
                 || position.pieceAt(action.to()) != null) return 0;
         var piece = position.pieceAt(action.from());
         String name = switch (piece.type()) {
-            case 'N' -> "Конь"; case 'B' -> "Слон";
-            case 'K' -> conversion ? "Король" : "";
-            case 'Q' -> conversion ? "Ферзь" : "";
-            case 'R' -> conversion ? "Ладья" : "";
+            case KNIGHT -> "Конь"; case BISHOP -> "Слон";
+            case KING -> conversion ? "Король" : "";
+            case QUEEN -> conversion ? "Ферзь" : "";
+            case ROOK -> conversion ? "Ладья" : "";
             default -> "";
         };
         if (name.isEmpty()) return 0;

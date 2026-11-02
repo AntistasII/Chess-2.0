@@ -4,7 +4,9 @@ import chess.opponent.LocalAiOpponent;
 import chess.ai.Ai;
 import chess.opponent.ChatGptOpponent;
 import chess.cards.CardRegistry;
+import chess.game.GameMode;
 import chess.game.GameSession;
+import chess.game.SaveFile;
 import chess.server.GameServer;
 import chess.service.GameService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -34,8 +36,9 @@ public class ApplicationConfig {
     GameSession gameSession(CardRegistry registry, OpenAiProperties openAi, ServerProperties properties, GameProperties gameProperties) throws IOException {
         // Зависимость от registry гарантирует проверку всех карт до создания партии.
         var localAi = new Ai(gameProperties);
-        return new GameSession(gameProperties, properties.networkMode() ? "network" : gameProperties.defaultMode(),
-                new LocalAiOpponent(localAi), ChatGptOpponent.fromConfig(openAi, localAi));
+        String mode = properties.networkMode() ? GameMode.NETWORK.id() : gameProperties.defaultMode();
+        return new GameSession(gameProperties, mode, new LocalAiOpponent(localAi),
+                ChatGptOpponent.fromConfig(openAi, localAi), new SaveFile(properties.saveFile()));
     }
 
     @Bean
